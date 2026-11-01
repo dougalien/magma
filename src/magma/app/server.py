@@ -28,14 +28,16 @@ STATIC = Path(__file__).resolve().parent / "static"
 PAGES = {"/": "control.html", "/control": "control.html", "/results": "results.html"}
 DEFAULT_PORT = 8766            # Reaction uses its own port; both apps can run at once
 MAX_BODY = 200_000
-PHASE_LABEL = {"olivine": "Olivine", "feldspar": "Plagioclase", "clinopyroxene": "Clinopyroxene", "orthopyroxene": "Orthopyroxene"}
+PHASE_LABEL = {"olivine": "Olivine", "feldspar": "Plagioclase", "clinopyroxene": "Clinopyroxene", "orthopyroxene": "Orthopyroxene",
+               "spinel": "Spinel"}
 
 NOTES = [
     "Liquid: Ghiorso and Sack (1995) regular-solution model, with the parameter values used in MELTS.",
     "Solids so far: olivine (Fe-Mg), feldspar (Na-Ca-K), clinopyroxene and orthopyroxene (the "
-    "seven-end-member MELTS model of Sack and Ghiorso 1994). Each mineral appears at most once, so two "
-    "coexisting clinopyroxenes (augite and pigeonite) are not found. Spinel and the Fe-Ti oxides are not "
-    "in the model yet, so late, iron-rich melts that would crystallize magnetite or ilmenite are not right.",
+    "seven-end-member MELTS model of Sack and Ghiorso 1994), and spinel (chromite, hercynite, magnetite, "
+    "spinel, ulvospinel; the MELTS model of Sack and Ghiorso 1991), which covers Cr-spinel and "
+    "titanomagnetite. Each mineral appears at most once, so two coexisting clinopyroxenes (augite and "
+    "pigeonite) are not found. Ilmenite is not in the model yet, so late, Fe-Ti-rich melts are not right.",
     "Iron: Fe3+/Fe2+ of the liquid from Kress and Carmichael (1991) at the chosen oxygen buffer "
     "(Frost 1991), or fixed by the starting Fe2O3 when the system is closed to oxygen.",
     "MnO, NiO, CoO and CO2 are not part of the liquid model and are left out of the calculation.",
@@ -158,7 +160,8 @@ def parse_inputs(d: dict) -> tuple[Composition, dict]:
 
 
 def _numbers(name: str, x: dict) -> dict:
-    """Composition numbers for the plots: olivine Fo, plagioclase An, pyroxene Wo and Mg#."""
+    """Composition numbers for the plots: olivine Fo, plagioclase An, pyroxene Wo and Mg#, spinel
+    ulvospinel, Mg# and Cr#."""
     if name == "olivine":
         return {"Fo": 100 * x.get("forsterite", 0)}
     if name == "feldspar":
@@ -169,6 +172,13 @@ def _numbers(name: str, x: dict) -> dict:
         ca, fe = 1 - r[4] - r[5], r[0]
         mg = 1 - r[0] - r[3] - 0.5 * (r[1] + r[2] + r[4]) + r[5]
         return {"Wo": 100 * ca / (ca + mg + fe), "Mg#": 100 * mg / (mg + fe)}
+    if name == "spinel":
+        cr, hc, mt, sp, usp = (x.get(e, 0) for e in PHASES[name].end_members)
+        mg, fe2, al, crr = sp, hc + cr + mt + 2 * usp, 2 * (hc + sp), 2 * cr
+        out = {"Usp": 100 * usp, "Mg#": 100 * mg / (mg + fe2) if mg + fe2 > 0 else 0.0}
+        if crr > 1e-6:
+            out["Cr#"] = 100 * crr / (crr + al)
+        return out
     return {}
 
 

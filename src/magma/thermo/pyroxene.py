@@ -40,20 +40,21 @@ _EPS = 1e-300
 class Taylor:
     """The cubic Taylor expansion of one pyroxene structure: G = sum (H - T S + (P-1) V) * monomial."""
 
-    def __init__(self, filename: str):
+    def __init__(self, filename: str, names=("X2", "X3", "X4", "X5", "X6", "X7", "S1", "S2")):
         text = resources.files("magma.data").joinpath(filename).read_text("utf-8")
         rows = [ln.split("\t") for ln in text.splitlines() if ln and not ln.startswith("#")][1:]
-        idx = {f"X{k}": k - 2 for k in range(2, 8)}
-        idx.update({"S1": 6, "S2": 7})
-        self.deg = np.zeros((len(rows), 8), int)
+        idx = {nm: k for k, nm in enumerate(names)}
+        nv = len(names)
+        self.deg = np.zeros((len(rows), nv), int)
         self.hsv = np.zeros((len(rows), 3))
-        for k, (name, h, s, v) in enumerate(rows):
+        for k, row in enumerate(rows):
+            name, vals = row[0], [float(v) for v in row[1:]] + [0.0] * (4 - len(row))
             if name != "0":
                 for i in range(0, len(name), 2):
                     self.deg[k, idx[name[i:i + 2]]] += 1
-            self.hsv[k] = float(h), float(s), float(v)
+            self.hsv[k] = vals[:3]
         # derivative of every monomial with respect to each variable: factor deg, lowered powers
-        self.ddeg = np.stack([np.maximum(self.deg - np.eye(8, dtype=int)[j], 0) for j in range(8)])
+        self.ddeg = np.stack([np.maximum(self.deg - np.eye(nv, dtype=int)[j], 0) for j in range(nv)])
         self.dfac = self.deg.T.astype(float)
         self._cache: dict = {}
 

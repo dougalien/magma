@@ -63,7 +63,12 @@ def _newton(residual, y, tol=1e-9, max_iter=60, h=1e-7) -> _Solution:
                     return _Solution(y, norm, False)
                 dy = -dy
             jac[:, j] = (rp - r) / dy
-        step = np.linalg.lstsq(jac, -r, rcond=None)[0]
+        if not np.all(np.isfinite(jac)):
+            return _Solution(y, norm, False)
+        try:
+            step = np.linalg.lstsq(jac, -r, rcond=None)[0]
+        except np.linalg.LinAlgError:
+            return _Solution(y, norm, False)
         big = np.max(np.abs(step))
         if big > 1.0:                        # at most a factor e in any amount, 1 in any fraction
             step /= big
@@ -113,7 +118,7 @@ class EquilibriumResult:
 class Equilibrator:
     """Equilibrium of one bulk composition (oxide wt%, i.e. grams per 100 g) at T, P, fO2."""
 
-    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene")):
+    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene", "spinel")):
         """fo2: a buffer ("QFM+1"), a log10 value, or None for a system closed to oxygen."""
         b = bulk.with_fe3_ratio(0.0)                     # carry iron as total FeO
         self.bulk_fe2o3 = bulk.moles().get("Fe2O3", 0.0)  # used when fo2 is None (closed to oxygen)
@@ -121,7 +126,13 @@ class Equilibrator:
         self.bulk_grams = {o: v * MOLAR_MASS[o] for o, v in self.bulk_moles.items()}
         self.ignored = {o: v for o, v in bulk.wt.items() if o not in MODEL_OXIDES and v > 0}
         self.fo2 = fo2
-        self.phases: list[SolutionPhase] = [PHASES[n] for n in phases]
+        absent = {o for o in MODEL_OXIDES if o not in ("Fe2O3", "H2O") and self.bulk_moles.get(o, 0.0) <= 0}
+        self.phases: list[SolutionPhase] = []
+        for name in phases:
+            ph = PHASES[name]
+            if hasattr(ph, "restricted"):        # end members that need a missing oxide cannot form
+                ph = ph.restricted([e for e in ph.end_members if set(OXIDES_OF[e]) & absent])
+            self.phases.append(ph)
 
     # ---- liquid ------------------------------------------------------------------------------
     def _liquid(self, solid_oxides: dict[str, float], t_c, p) -> Composition:
@@ -185,10 +196,13 @@ class Equilibrator:
                 m = len(ph.end_members)
                 ni = n[i:i + m]
                 mu_s = ph.mu(ni / ni.sum(), t, p)
+                active = getattr(ph, "active", None)
                 for j, e in enumerate(ph.end_members):
-                    res.append((mu_s[j] - mu_in_liquid(e, mu_l)) / (8.3143 * t))
+                    if active is None or active[j]:
+                        res.append((mu_s[j] - mu_in_liquid(e, mu_l)) / (8.3143 * t))
                 i += m
-            return np.array(res)
+            res = np.array(res)
+            return res if np.all(np.isfinite(res)) else None
 
         sol = _newton(residual, np.asarray(guess, float))
         n, solid_ox = unpack(sol.x)
@@ -244,9 +258,21 @@ class Equilibrator:
             ph = next(p for p in absent if p.name == best[0])
             x = best[1][1]
             trial = present + [ph]
-            tguess = np.concatenate([guess, ph.params_from(x, 1e-3)])
-            sol, tn, tlayout, tsolid = self._solve(trial, t_c, p_bar, tguess)
+            for amount in (1e-3, 1e-2, 3e-2):   # moles of the new phase to start from
+                tguess = np.concatenate([guess, ph.params_from(x, amount)])
+                sol, tn, tlayout, tsolid = self._solve(trial, t_c, p_bar, tguess)
+                if sol.success:
+                    break
             if not sol.success:
+                # a phase driven toward zero while the new one grows is being replaced by it
+                gone = [k for k, (_, nk) in enumerate(self._split(trial, tn)) if nk.sum() < 1e-4 * max(tn.sum(), 1e-30)]
+                if gone and len(gone) < len(trial):
+                    keep = [k for k in range(len(trial)) if k not in gone]
+                    starts = np.cumsum([0] + [q.n_params for q in trial])
+                    g2 = np.concatenate([sol.x[starts[k]:starts[k + 1]] for k in keep])
+                    trial = [trial[k] for k in keep]
+                    sol, tn, tlayout, tsolid = self._solve(trial, t_c, p_bar, g2)
+            if not sol.success or ph not in trial:
                 skipped.add(ph.name)             # cannot be added at this T; try the others
                 continue
             present, guess, n, layout, solid_ox = trial, sol.x, tn, tlayout, tsolid

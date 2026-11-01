@@ -42,10 +42,11 @@ def test_end_member_potentials_consistent_with_gibbs():
 
 def test_melts_example_equilibrium():
     r = Equilibrator(MELTS_BULK, fo2=None).equilibrate(1220.0, 1000.0)
-    names = [s.name for s in r.solids]
-    assert names == ["feldspar"]                          # MELTS: plagioclase (+0.02 g spinel)
-    assert r.solids[0].x["anorthite"] == pytest.approx(0.81, abs=0.02)
-    assert 0.0 < r.solids[0].grams < 3.0                  # MELTS: 1.47 g
+    by = {s.name: s for s in r.solids}
+    assert set(by) == {"feldspar", "spinel"}              # MELTS: plagioclase + 0.02 g spinel
+    assert by["feldspar"].x["anorthite"] == pytest.approx(0.81, abs=0.02)
+    assert 0.0 < by["feldspar"].grams < 3.0               # MELTS: 1.47 g
+    assert by["spinel"].grams < 0.2
 
 
 def test_morb_cooling_mass_balance_and_order():

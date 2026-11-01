@@ -3,7 +3,8 @@
 # Values as used in ThermoEngine v2 (gitlab.com/ENKI-portal/ThermoEngine, src/*Berman.m, AGPL-3),
 # taken with Douglas's approval on 2026-11-01; they follow Berman (1988) except where noted.
 # special: albite_salje = Salje (1985) Landau ordering term; disorder = Berman (1988) disorder
-# function d0..d4 up to 1436 K with d5 its volume scaling (see minerals.py).
+# function d0..d4 up to 1436 K with d5 its volume scaling; lambda:l1,l2,Tt,deltaH = Berman (1988)
+# lambda heat capacity (see minerals.py).
 name	formula	H	S	k0	k1	k2	k3	v0	v1	v2	v3	v4	special	note
 forsterite	Mg2SiO4	-2174420.0	94.010	238.64	-2001.3	0.0	-116240000.0	4.366	-0.791e-6	1.351e-12	29.464e-6	88.633e-10		OlivineBerman.m
 fayalite	Fe2SiO4	-1479360.0	150.930	248.93	-1923.9	0.0	-139100000.0	4.630	-0.730e-6	0.0	26.546e-6	79.482e-10		OlivineBerman.m
@@ -17,3 +18,8 @@ alumino-buffonite	CaTi0.5Mg0.5AlSiO6	-3283830.18	143.745	297.499	-1355.96	-67021
 buffonite	CaTi0.5Mg0.5FeSiO6	-2828776.95	180.741	303.909	-1417.67	-4356540.0	352523000.0	6.7217	-0.870e-6	2.171e-12	22.250e-6	52.863e-10		CpxBerman.m: H = -2836709 + 7932.05, S = 161.985 + 18.756
 essenite	CaFeAlSiO6	-2867478.01	177.747	317.11	-1733.3	-5109650.0	542220000.0	6.7217	-0.870e-6	2.171e-12	22.250e-6	52.863e-10		CpxBerman.m: H = -2860211 - 7267.01, S = 158.991 + 18.756
 jadeite	NaAlSi2O6	-3025118.0	133.574	311.29	-2005.1	-5350300.0	662570000.0	6.034	-0.860e-6	2.149e-12	23.118e-6	25.785e-10		CpxBerman.m (Berman 1988)
+chromite	FeCr2O4	-1445490.0	142.676	236.874	-1679.6	0.0	-167650000.0	4.4010	0.0	0.0	0.0	0.0		SpinelBerman.m (Sack & Ghiorso 1991)
+hercynite	FeAl2O4	-1947681.0	115.362	235.190	-1437.0	-4691300.0	645640000.0	4.07499843	0.0	0.0	0.0	0.0		SpinelBerman.m (Sack & Ghiorso 1991), v0 = 0.973948 cal/bar
+spinel	MgAl2O4	-2300313.0	84.535	235.90	-1766.6	-1710400.0	40620000.0	3.977	-0.489e-6	0.0	21.691e-6	50.528e-10		SpinelBerman.m (Berman 1988)
+ulvospinel	Fe2TiO4	-1488500.0	185.447	249.63	-1817.4	0.0	-54530000.0	4.682	0.0	0.0	0.0	0.0		SpinelBerman.m (Sack & Ghiorso 1991)
+magnetite	Fe3O4	-1117403.0	146.114	207.93	0.0	-7243300.0	664360000.0	4.452	-0.582e-6	1.751e-12	30.291e-6	138.470e-10	lambda:-19.502e-2,61.037e-5,848.0,1565.0	SpinelBerman.m (Berman 1988 with lambda transition l1, l2, Tt, deltaH)

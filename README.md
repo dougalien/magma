@@ -23,6 +23,10 @@ Milestones 1 and 2 are under way.  Working now, for anhydrous to slightly hydrou
   with Fe-Mg and Fe3+-Al ordering, our own code for the model's equations (its Taylor coefficients
   are in `data/melts_cpx_taylor.tsv` and `data/melts_opx_taylor.tsv`, evaluated from ThermoEngine's parameters with Douglas's
   approval on 2026-11-01); checked term by term against the definitions in ThermoEngine.
+- `magma.thermo.spinel`: spinel (chromite, hercynite, magnetite, spinel, ulvospinel; Sack and
+  Ghiorso 1991 as in MELTS) with Mg, Al and Fe3+ ordering between the tetrahedral and octahedral
+  sites; same approach as the pyroxenes (`data/melts_spinel_taylor.tsv`).  It covers Cr-spinel and
+  titanomagnetite.  End members whose oxide is absent (chromite without Cr2O3) are switched off.
 - `magma.equilibrium`: liquid + solids at one T, P and fO2 (or closed to oxygen), adding and
   dropping phases by their affinities, as MELTS does.
 - `magma.path`: equilibrium or fractional crystallization along a cooling path.
@@ -48,14 +52,20 @@ Checks against MELTS (ThermoEngine's MELTS v1.0.2 MORB example, 1220 C, 100 MPa)
 | Olivine on that liquid | 119 J undersaturated | 277 J undersaturated |
 | Augite on that liquid | 1334 J undersaturated | 1394 J undersaturated |
 | Orthopyroxene on that liquid | 2295 J undersaturated | 2397 J undersaturated |
-| Equilibrium of the bulk composition | plagioclase 1.47 g An81 (+ 0.02 g spinel) | plagioclase 0.45 g An82 |
+| Spinel on that liquid | saturated, Mg 0.79 Cr 0.45 Al 1.32 per 4 O | 160 J oversaturated, Mg 0.79 Cr 0.44 |
+| Equilibrium of the bulk composition | plagioclase 1.47 g An81 + 0.02 g spinel | plagioclase 0.43 g An82 + 0.03 g spinel |
 
 ALL MORB at 1 bar and QFM: plagioclase appears between 1190 and 1200 C, then olivine (Fo~83,
 olivine-melt Kd 0.32) and augite (Wo~40, Mg# 85) together near 1180 C; by 1150 C the system is
-56% melt.  Olivine runs out near 1130 C and returns as Fo~60 below 1100 C.  Spinel and the Fe-Ti
-oxides are still missing, and each mineral appears only once (no augite + pigeonite pair).
+56% melt.  Olivine runs out near 1130 C; titanomagnetite (about 90% ulvospinel) joins at 1110 C and
+the melt fraction then drops quickly (18% to 7% by 1100 C), with olivine back as Fo~60.  Ilmenite is
+still missing, and each mineral appears only once (no augite + pigeonite pair).  Below about 5% melt
+the results are not reliable.
 
-Next: spinel, a second pyroxene (pigeonite), the Fe-Ti oxides, then partial melting of a rock.
+The cooled MELTS example basalt (QFM, 1 kbar) grows Cr-spinel from 1245 C, then plagioclase at 1220 C,
+olivine at 1210 C and augite at 1200 C.
+
+Next: the Fe-Ti oxides (ilmenite-hematite), a second pyroxene (pigeonite), then partial melting of a rock.
 
 ## The app
 

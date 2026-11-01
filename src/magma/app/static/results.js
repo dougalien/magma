@@ -40,6 +40,8 @@ function series(steps) {
   add("clinopyroxene", "Mg#", "Clinopyroxene Mg#", "var(--s4)");
   add("clinopyroxene", "Wo", "Clinopyroxene Wo", "var(--s5)", "5 4");
   add("orthopyroxene", "Mg#", "Orthopyroxene Mg#", "var(--s7)");
+  add("spinel", "Cr#", "Spinel Cr#", "var(--s8)");
+  add("spinel", "Usp", "Spinel ulvöspinel", "var(--s1)", "2 3");
   out.push({ label: "Melt Mg# ", color: color("var(--s6)"), dash: "5 4", y: steps.map((s) => s.mg_number) });
   return { x, s: out, opts: { yLabel: "mol%" } };
 }

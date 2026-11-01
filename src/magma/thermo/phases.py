@@ -35,6 +35,11 @@ OXIDES_OF = {
     "buffonite": {"CaO": 1, "TiO2": 0.5, "MgO": 0.5, "Fe2O3": 0.5, "SiO2": 1},
     "essenite": {"CaO": 1, "Fe2O3": 0.5, "Al2O3": 0.5, "SiO2": 1},
     "jadeite": {"Na2O": 0.5, "Al2O3": 0.5, "SiO2": 2},
+    "chromite": {"FeO": 1, "Cr2O3": 1},
+    "hercynite": {"FeO": 1, "Al2O3": 1},
+    "magnetite": {"FeO": 1, "Fe2O3": 1},
+    "spinel": {"MgO": 1, "Al2O3": 1},
+    "ulvospinel": {"FeO": 2, "TiO2": 1},
 }
 
 
@@ -159,5 +164,6 @@ class SolutionPhase:
 OLIVINE = SolutionPhase("olivine", ("forsterite", "fayalite"), g_ex_olivine, sites=2.0)
 FELDSPAR = SolutionPhase("feldspar", ("albite", "anorthite", "sanidine"), g_ex_feldspar)
 from .pyroxene import CLINOPYROXENE, ORTHOPYROXENE      # noqa: E402
+from .spinel import SPINEL                               # noqa: E402
 
-PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE, ORTHOPYROXENE)}
+PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE, ORTHOPYROXENE, SPINEL)}

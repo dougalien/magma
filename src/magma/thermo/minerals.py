@@ -7,6 +7,8 @@ Two special cases:
 * albite: plus the Salje (1985) Landau term for Al-Si (q) and monoclinic-triclinic (q_od) ordering,
   minimized over q and q_od at each T, P.  Above about 1270 K both vanish.
 * sanidine: plus the Berman (1988) disorder function, integrated from 298.15 K to min(T, 1436 K).
+* lambda:l1,l2,Tt,dH (magnetite): Berman (1988) lambda heat capacity T (l1 + l2 T)^2 up to Tt,
+  plus the enthalpy dH at Tt.
 """
 from __future__ import annotations
 
@@ -44,6 +46,16 @@ class EndMember:
         v0, v1, v2, v3, v4 = self.v
         dt, dp = t - TR, p - PR
         g = h - t * s + v0 * ((1 + v3 * dt + v4 * dt * dt) * dp + v1 / 2 * dp * dp + v2 / 3 * dp ** 3)
+        if self.special.startswith("lambda:"):
+            l1, l2, tt, dh = (float(v) for v in self.special[7:].split(","))
+            tl = min(t, tt)
+            h_l = 0.5 * l1 * l1 * (tl ** 2 - TR ** 2) + 2 / 3 * l1 * l2 * (tl ** 3 - TR ** 3) \
+                + 0.25 * l2 * l2 * (tl ** 4 - TR ** 4)
+            s_l = l1 * l1 * (tl - TR) + l1 * l2 * (tl ** 2 - TR ** 2) + l2 * l2 / 3 * (tl ** 3 - TR ** 3)
+            if t > tt:
+                h_l += dh
+                s_l += dh / tt
+            g += h_l - t * s_l
         if self.special == "disorder":
             g += _disorder_g(t, p)
         elif self.special == "albite_salje":
