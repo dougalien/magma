@@ -7,9 +7,12 @@ from .composition import Composition
 from .equilibrium import Equilibrator, EquilibriumResult
 
 
+SOLIDUS_MELT = 0.06     # below this melt fraction a path that loses its assemblage has reached the solidus
+
+
 def crystallize(bulk: Composition, t_start: float, t_end: float, step: float = 5.0,
                 p_bar: float = 1.0, fo2="QFM", mode: str = "equilibrium",
-                phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene", "spinel")) -> list[EquilibriumResult]:
+                phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene", "spinel", "rhombohedral")) -> list[EquilibriumResult]:
     """Cool from t_start to t_end (degC).  mode "fractional" removes the solids after each step
     and continues with the remaining liquid.  Masses are grams per 100 g of the starting melt."""
     return list(iter_crystallize(bulk, t_start, t_end, step, p_bar, fo2, mode, phases))
@@ -17,8 +20,10 @@ def crystallize(bulk: Composition, t_start: float, t_end: float, step: float = 5
 
 def iter_crystallize(bulk: Composition, t_start: float, t_end: float, step: float = 5.0,
                      p_bar: float = 1.0, fo2="QFM", mode: str = "equilibrium",
-                     phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene", "spinel")):
-    """Same as crystallize, one step at a time (the app shows progress and can stop between steps)."""
+                     phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene", "spinel", "rhombohedral")):
+    """Same as crystallize, one step at a time (the app shows progress and can stop between steps).
+    In equilibrium mode the path ends early near the solidus: once the melt is nearly gone and the
+    next step cannot keep the assemblage (Magma has no liquid-free equilibrium yet)."""
     if mode not in ("equilibrium", "fractional"):
         raise ValueError("mode must be 'equilibrium' or 'fractional'")
     if step <= 0 or t_end > t_start:
@@ -28,6 +33,8 @@ def iter_crystallize(bulk: Composition, t_start: float, t_end: float, step: floa
     for k in range(n + 1):
         t = t_start - k * step
         r = Equilibrator(current, fo2=fo2, phases=phases).equilibrate(t, p_bar, start=prev)
+        if prev is not None and prev.melt_fraction < SOLIDUS_MELT and r.melt_fraction > prev.melt_fraction + 0.002:
+            return                               # the previous assemblage could not be followed: solidus
         prev = copy.deepcopy(r) if mode == "equilibrium" else None
         f = scale / (r.liquid_grams + sum(s.grams for s in r.solids))
         r.liquid_grams *= f

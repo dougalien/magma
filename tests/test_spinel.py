@@ -45,7 +45,9 @@ def test_spinel_saturation_against_melts_example():
 
 
 def test_morb_reaches_titanomagnetite_without_chromium():
-    steps = crystallize(PRESETS["MORB"], 1130, 1100, 10)
+    # without ilmenite in the system (with it, ilmenite takes the Ti first at QFM)
+    steps = crystallize(PRESETS["MORB"], 1130, 1100, 10,
+                        phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene", "spinel"))
     last = steps[-1]
     names = {s.name for s in last.solids}
     assert "spinel" in names and "feldspar" in names and "clinopyroxene" in names

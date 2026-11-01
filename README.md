@@ -27,6 +27,9 @@ Milestones 1 and 2 are under way.  Working now, for anhydrous to slightly hydrou
   Ghiorso 1991 as in MELTS) with Mg, Al and Fe3+ ordering between the tetrahedral and octahedral
   sites; same approach as the pyroxenes (`data/melts_spinel_taylor.tsv`).  It covers Cr-spinel and
   titanomagnetite.  End members whose oxide is absent (chromite without Cr2O3) are switched off.
+- `magma.thermo.rhombohedral`: the ilmenite-hematite solution of Ghiorso and Evans (2008) as in
+  MELTS (geikielite, hematite, ilmenite, corundum; pyrophanite is left out because the liquid has no
+  MnO), with Fe, Mg-Ti ordering between the layers; its G matches ThermoEngine's definition exactly.
 - `magma.equilibrium`: liquid + solids at one T, P and fO2 (or closed to oxygen), adding and
   dropping phases by their affinities, as MELTS does.
 - `magma.path`: equilibrium or fractional crystallization along a cooling path.
@@ -57,15 +60,16 @@ Checks against MELTS (ThermoEngine's MELTS v1.0.2 MORB example, 1220 C, 100 MPa)
 
 ALL MORB at 1 bar and QFM: plagioclase appears between 1190 and 1200 C, then olivine (Fo~83,
 olivine-melt Kd 0.32) and augite (Wo~40, Mg# 85) together near 1180 C; by 1150 C the system is
-56% melt.  Olivine runs out near 1130 C; titanomagnetite (about 90% ulvospinel) joins at 1110 C and
-the melt fraction then drops quickly (18% to 7% by 1100 C), with olivine back as Fo~60.  Ilmenite is
-still missing, and each mineral appears only once (no augite + pigeonite pair).  Below about 5% melt
-the results are not reliable.
+56% melt.  Olivine runs out near 1130 C; ilmenite (Ilm69 Gk23 Hem2) joins at 1110 C and the melt
+fraction then drops quickly (25% to 7% by 1100 C), with olivine back as Fo~50.  The path ends at
+1090 C with 3.5% melt: Magma cannot follow a system past its solidus yet.  Without ilmenite,
+titanomagnetite (about 90% ulvospinel) takes its place at 1110 C.  Each mineral appears only once
+(no augite + pigeonite pair).
 
 The cooled MELTS example basalt (QFM, 1 kbar) grows Cr-spinel from 1245 C, then plagioclase at 1220 C,
 olivine at 1210 C and augite at 1200 C.
 
-Next: the Fe-Ti oxides (ilmenite-hematite), a second pyroxene (pigeonite), then partial melting of a rock.
+Next: partial melting of a rock, a second pyroxene (pigeonite), and the H2O standard state.
 
 ## The app
 

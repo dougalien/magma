@@ -40,6 +40,10 @@ OXIDES_OF = {
     "magnetite": {"FeO": 1, "Fe2O3": 1},
     "spinel": {"MgO": 1, "Al2O3": 1},
     "ulvospinel": {"FeO": 2, "TiO2": 1},
+    "geikielite": {"MgO": 1, "TiO2": 1},
+    "hematite": {"Fe2O3": 1},
+    "ilmenite": {"FeO": 1, "TiO2": 1},
+    "corundum": {"Al2O3": 1},
 }
 
 
@@ -165,5 +169,6 @@ OLIVINE = SolutionPhase("olivine", ("forsterite", "fayalite"), g_ex_olivine, sit
 FELDSPAR = SolutionPhase("feldspar", ("albite", "anorthite", "sanidine"), g_ex_feldspar)
 from .pyroxene import CLINOPYROXENE, ORTHOPYROXENE      # noqa: E402
 from .spinel import SPINEL                               # noqa: E402
+from .rhombohedral import RHOMBOHEDRAL                   # noqa: E402
 
-PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE, ORTHOPYROXENE, SPINEL)}
+PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE, ORTHOPYROXENE, SPINEL, RHOMBOHEDRAL)}

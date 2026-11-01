@@ -23,3 +23,7 @@ hercynite	FeAl2O4	-1947681.0	115.362	235.190	-1437.0	-4691300.0	645640000.0	4.07
 spinel	MgAl2O4	-2300313.0	84.535	235.90	-1766.6	-1710400.0	40620000.0	3.977	-0.489e-6	0.0	21.691e-6	50.528e-10		SpinelBerman.m (Berman 1988)
 ulvospinel	Fe2TiO4	-1488500.0	185.447	249.63	-1817.4	0.0	-54530000.0	4.682	0.0	0.0	0.0	0.0		SpinelBerman.m (Sack & Ghiorso 1991)
 magnetite	Fe3O4	-1117403.0	146.114	207.93	0.0	-7243300.0	664360000.0	4.452	-0.582e-6	1.751e-12	30.291e-6	138.470e-10	lambda:-19.502e-2,61.037e-5,848.0,1565.0	SpinelBerman.m (Berman 1988 with lambda transition l1, l2, Tt, deltaH)
+geikielite	MgTiO3	-1572560.0	74.56	146.20	-416.0	-3999800.0	402330000.0	3.086	-0.584e-6	1.230e-12	27.248e-6	29.968e-10		RhombohedralBerman.m (Ghiorso and Evans 2008)
+hematite	Fe2O3	-825627.0	87.437	146.86	0.0	-5576800.0	525630000.0	3.027	-0.479e-6	0.304e-12	38.310e-6	1.650e-10	lambda:-7.403e-2,27.921e-5,955.0,1287.0	RhombohedralBerman.m (Ghiorso and Evans 2008)
+ilmenite	FeTiO3	-1231947.0	108.628	150.0	-441.6	-3323700.0	348150000.0	3.170	-0.584e-6	1.230e-12	27.248e-6	29.968e-10		RhombohedralBerman.m (Ghiorso and Evans 2008)
+corundum	Al2O3	-1655700.0	50.820	155.02	-828.4	-3861400.0	409080000.0	2.558	-0.385e-6	0.375e-12	21.342e-6	47.180e-10		RhombohedralBerman.m: Berman H + 20 kJ, which MELTS adds to keep Al in ilmenite at 1-3%

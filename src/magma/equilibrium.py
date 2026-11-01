@@ -118,7 +118,7 @@ class EquilibriumResult:
 class Equilibrator:
     """Equilibrium of one bulk composition (oxide wt%, i.e. grams per 100 g) at T, P, fO2."""
 
-    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene", "spinel")):
+    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene", "spinel", "rhombohedral")):
         """fo2: a buffer ("QFM+1"), a log10 value, or None for a system closed to oxygen."""
         b = bulk.with_fe3_ratio(0.0)                     # carry iron as total FeO
         self.bulk_fe2o3 = bulk.moles().get("Fe2O3", 0.0)  # used when fo2 is None (closed to oxygen)

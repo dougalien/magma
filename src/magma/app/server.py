@@ -29,15 +29,16 @@ PAGES = {"/": "control.html", "/control": "control.html", "/results": "results.h
 DEFAULT_PORT = 8766            # Reaction uses its own port; both apps can run at once
 MAX_BODY = 200_000
 PHASE_LABEL = {"olivine": "Olivine", "feldspar": "Plagioclase", "clinopyroxene": "Clinopyroxene", "orthopyroxene": "Orthopyroxene",
-               "spinel": "Spinel"}
+               "spinel": "Spinel", "rhombohedral": "Ilmenite"}
 
 NOTES = [
     "Liquid: Ghiorso and Sack (1995) regular-solution model, with the parameter values used in MELTS.",
     "Solids so far: olivine (Fe-Mg), feldspar (Na-Ca-K), clinopyroxene and orthopyroxene (the "
     "seven-end-member MELTS model of Sack and Ghiorso 1994), and spinel (chromite, hercynite, magnetite, "
     "spinel, ulvospinel; the MELTS model of Sack and Ghiorso 1991), which covers Cr-spinel and "
-    "titanomagnetite. Each mineral appears at most once, so two coexisting clinopyroxenes (augite and "
-    "pigeonite) are not found. Ilmenite is not in the model yet, so late, Fe-Ti-rich melts are not right.",
+    "titanomagnetite, and the ilmenite-hematite solution (ilmenite, geikielite, hematite, corundum; "
+    "the MELTS model of Ghiorso and Evans 2008). Each mineral appears at most once, so two coexisting "
+    "clinopyroxenes (augite and pigeonite) are not found. Equilibrium paths end near the solidus.",
     "Iron: Fe3+/Fe2+ of the liquid from Kress and Carmichael (1991) at the chosen oxygen buffer "
     "(Frost 1991), or fixed by the starting Fe2O3 when the system is closed to oxygen.",
     "MnO, NiO, CoO and CO2 are not part of the liquid model and are left out of the calculation.",
@@ -121,6 +122,9 @@ class State:
                     break
             else:
                 self.status = "done"
+                if self.steps and self.steps[-1]["t"] > kw["t_end"] + 1e-6:
+                    self.message = (f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is nearly gone (near the "
+                                    "solidus), which Magma cannot follow further yet.")
         except Exception as exc:          # shown in both windows
             self.status, self.message = "error", f"{type(exc).__name__}: {exc}"
         self.changed()
@@ -172,6 +176,8 @@ def _numbers(name: str, x: dict) -> dict:
         ca, fe = 1 - r[4] - r[5], r[0]
         mg = 1 - r[0] - r[3] - 0.5 * (r[1] + r[2] + r[4]) + r[5]
         return {"Wo": 100 * ca / (ca + mg + fe), "Mg#": 100 * mg / (mg + fe)}
+    if name == "rhombohedral":
+        return {"Ilm": 100 * x.get("ilmenite", 0), "Hem": 100 * x.get("hematite", 0)}
     if name == "spinel":
         cr, hc, mt, sp, usp = (x.get(e, 0) for e in PHASES[name].end_members)
         mg, fe2, al, crr = sp, hc + cr + mt + 2 * usp, 2 * (hc + sp), 2 * cr

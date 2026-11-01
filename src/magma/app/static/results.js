@@ -42,6 +42,7 @@ function series(steps) {
   add("orthopyroxene", "Mg#", "Orthopyroxene Mg#", "var(--s7)");
   add("spinel", "Cr#", "Spinel Cr#", "var(--s8)");
   add("spinel", "Usp", "Spinel ulvöspinel", "var(--s1)", "2 3");
+  add("rhombohedral", "Ilm", "Ilmenite (FeTiO3)", "var(--s7)", "2 3");
   out.push({ label: "Melt Mg# ", color: color("var(--s6)"), dash: "5 4", y: steps.map((s) => s.mg_number) });
   return { x, s: out, opts: { yLabel: "mol%" } };
 }
@@ -110,7 +111,7 @@ function show(st) {
   const i = st.inputs;
   $("title").textContent = `${i.name || "Melt"}: ${i.mode} crystallization`;
   $("meta").textContent = `${i.t_start} to ${i.t_end} °C in ${i.step} °C steps, ${i.p_bar} bar, oxygen ${i.fo2 === "closed" ? "closed system" : i.fo2}`;
-  $("story").replaceChildren(...story(st).map((t) => h("p", {}, t)), ...(st.status === "error" ? [h("div", { class: "errbox" }, st.message)] : []));
+  $("story").replaceChildren(...story(st).map((t) => h("p", {}, t)), ...(st.status === "error" ? [h("div", { class: "errbox" }, st.message)] : st.message && st.status === "done" ? [h("p", {}, st.message)] : []));
   $("notes").replaceChildren(...st.notes.map((n) => h("li", {}, n)));
   table(st.steps);
   draw();
