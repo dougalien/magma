@@ -18,6 +18,6 @@ exe = EXE(
     name="Magma",
     console=True,          # the window shows where the app runs; closing it stops the app
     upx=False,
-    icon=str(ROOT / "packaging" / "magma.ico"),            # the Dougalien Systems mark
+    icon=str(ROOT / "packaging" / "magma.ico"),            # the Magma M in the Dougalien Systems style (packaging/icon/make_icons.py)
     version=str(ROOT / "packaging" / "version_info.txt"),  # company and product in Properties > Details
 )
