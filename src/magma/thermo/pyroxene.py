@@ -225,6 +225,11 @@ def order(r, t, p, tay: Taylor = CPX, tol=1e-9):
             bounds.append((0.5 * (lo + hi),) * 2)
     s_start = np.array([0.5 * (b[0] + b[1]) for b in bounds])
     r = np.asarray(r, float)
+    key = (t, p, id(tay))
+    for r_old, s_old in _ORDER_CACHE.get(key, ()):   # start from a nearby composition's ordering
+        if np.max(np.abs(r_old - r)) < 0.02:
+            s_start = np.clip(s_old, [b[0] for b in bounds], [b[1] for b in bounds])
+            break
 
     def f(s):
         g, dg = g_and_grad(np.concatenate([r, s]), t, p, tay)
@@ -232,7 +237,15 @@ def order(r, t, p, tay: Taylor = CPX, tol=1e-9):
 
     res = minimize(f, s_start, jac=True, method="L-BFGS-B", bounds=bounds,
                    options=dict(ftol=1e-15, gtol=tol))
+    entries = _ORDER_CACHE.setdefault(key, [])
+    entries.insert(0, (r.copy(), res.x.copy()))
+    del entries[8:]
+    if len(_ORDER_CACHE) > 64:
+        _ORDER_CACHE.clear()
     return res.x, float(res.fun)
+
+
+_ORDER_CACHE: dict = {}     # (T, P, model) -> recent (r, s)
 
 
 @lru_cache(maxsize=512)

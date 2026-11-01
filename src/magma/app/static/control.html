@@ -13,7 +13,7 @@
   <img class="mark" src="/static/dougalien_mark.svg" alt="" width="26" height="26">
   <h1>Magma</h1>
   <a class="brand small" href="https://dougalien.com" target="_blank" rel="noopener" title="Visit dougalien.com (opens in your browser)">by Dougalien Systems</a>
-  <span class="muted small">cooling a silicate melt</span>
+  <span class="muted small">cooling a melt, melting a rock</span>
   <span class="spacer"></span>
   <button id="open-results" title="The window with the plots and tables">Open results window</button>
   <span id="pill-link" class="pill">connecting</span>
@@ -22,7 +22,7 @@
   <section class="panel" id="card">
     <div class="cardgrid">
       <fieldset class="group">
-        <legend>Starting melt</legend>
+        <legend id="start-legend">Starting melt</legend>
         <label class="f">Composition<select id="preset"></select></label>
         <div id="preset-source" class="hint" style="margin:4px 0 10px"></div>
         <div class="oxgrid" id="oxides"></div>
@@ -47,13 +47,16 @@
         </fieldset>
         <fieldset class="group">
           <legend>Process</legend>
+          <div class="seg" id="process" role="group" aria-label="Process" style="margin-bottom:8px">
+            <button data-process="crystallize" class="on">Cool a melt</button><button data-process="melt">Heat a rock</button>
+          </div>
           <div class="seg" id="mode" role="group" aria-label="Mode">
-            <button data-mode="equilibrium" class="on">Equilibrium</button><button data-mode="fractional">Fractional</button>
+            <button data-mode="equilibrium" class="on" id="mode-eq">Equilibrium</button><button data-mode="fractional">Fractional</button>
           </div>
           <div class="hint" id="mode-hint" style="margin-top:6px"></div>
           <h3 style="margin:12px 0 6px">Minerals allowed</h3>
           <div class="row" id="phases"></div>
-          <div class="hint" style="margin-top:6px">A second pyroxene (pigeonite) and partial melting are coming next.</div>
+          <div class="hint" style="margin-top:6px">A second pyroxene (pigeonite) and garnet are not in the model yet.</div>
         </fieldset>
       </div>
     </div>

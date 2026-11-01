@@ -33,6 +33,9 @@ Milestones 1 and 2 are under way.  Working now, for anhydrous to slightly hydrou
 - `magma.equilibrium`: liquid + solids at one T, P and fO2 (or closed to oxygen), adding and
   dropping phases by their affinities, as MELTS does.
 - `magma.path`: equilibrium or fractional crystallization along a cooling path.
+- `magma.melting`: partial melting of a rock on heating, batch (equilibrium; computed by cooling the
+  rock's composition from above its liquidus and reported from low to high T) or fractional (melt
+  above 1% of the residue removed at each step and pooled).
 
 ```python
 from magma.composition import PRESETS
@@ -69,7 +72,15 @@ titanomagnetite (about 90% ulvospinel) takes its place at 1110 C.  Each mineral 
 The cooled MELTS example basalt (QFM, 1 kbar) grows Cr-spinel from 1245 C, then plagioclase at 1220 C,
 olivine at 1210 C and augite at 1200 C.
 
-Next: partial melting of a rock, a second pyroxene (pigeonite), and the H2O standard state.
+KLB-1 peridotite at 1 GPa and QFM (batch): the rock is 1.7% melt at 1300 C, cpx is used up near
+1390 C at about 20% melt, then the residue is harzburgite (olivine + opx + Cr-spinel), 25% melt at
+1450 C; Hirose and Kushiro (1993) find cpx out at a similar degree of melting.  Fractional melting of
+the same rock exhausts cpx near 1415 C, after which melting nearly stops (about 21 g of pooled melt
+by 1450 C).  The lowest-degree melts are far too rich in Na2O (9-11 wt%), the same failing as MELTS
+(the reason pMELTS exists).  Garnet is not in the model, so keep peridotite below about 2 GPa.
+The KLB-1 composition was entered from memory and should be checked against Davis et al. (2009).
+
+Next: a second pyroxene (pigeonite), garnet, and the H2O standard state.
 
 ## The app
 

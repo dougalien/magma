@@ -145,4 +145,11 @@ PRESETS: dict[str, Composition] = {
         name="MELTS example basalt",
         source="ThermoEngine documentation, MELTS v1.0.2 fractionation example (high-alumina basalt)",
     ),
+    "KLB-1 peridotite": Composition(
+        {"SiO2": 44.48, "TiO2": 0.16, "Al2O3": 3.59, "Cr2O3": 0.31, "FeO": 8.10, "MnO": 0.12,
+         "MgO": 39.22, "CaO": 3.44, "Na2O": 0.30, "K2O": 0.02, "NiO": 0.25},
+        name="KLB-1 spinel lherzolite",
+        source="Davis, Tangeman and Hirschmann (2009) Am. Mineral. 94:176-180, Table 1 (KLB-1 of "
+               "Takahashi 1986); FeO is total Fe. Entered from memory: check against the paper",
+    ),
 }

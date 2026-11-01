@@ -39,7 +39,7 @@ class _Solution:
     success: bool
 
 
-def _newton(residual, y, tol=1e-9, max_iter=60, h=1e-7) -> _Solution:
+def _newton(residual, y, tol=1e-9, max_iter=60, h=1e-7, stall=False) -> _Solution:
     """Damped Gauss-Newton with a finite-difference Jacobian.  `residual` returns None outside the
     feasible region (a solid exceeding the bulk, or an impossible site occupancy); steps are halved
     until they stay feasible and reduce the residual."""
@@ -47,9 +47,13 @@ def _newton(residual, y, tol=1e-9, max_iter=60, h=1e-7) -> _Solution:
     if r is None:
         return _Solution(y, np.inf, False)
     norm = float(np.linalg.norm(r))
-    for _ in range(max_iter):
+    history = []
+    for it in range(max_iter):
         if norm < tol:
             break
+        history.append(norm)
+        if stall and it >= 15 and norm > 0.5 * history[-11] and norm > 1e-3:
+            break                            # stalled: no real progress in ten iterations
         jac = np.empty((len(r), len(y)))
         for j in range(len(y)):
             dy = h * max(1.0, abs(y[j]))
@@ -82,7 +86,7 @@ def _newton(residual, y, tol=1e-9, max_iter=60, h=1e-7) -> _Solution:
             lam *= 0.5
         if not accepted:
             break
-    return _Solution(y, norm, norm < 1e-6)
+    return _Solution(y, norm, norm < 1e-4)          # 1e-4 RT, about 1 J per end member
 
 
 @dataclass
@@ -101,6 +105,7 @@ class EquilibriumResult:
     liquid_grams: float
     solids: list[PhaseResult] = field(default_factory=list)
     affinities: dict[str, float] = field(default_factory=dict)   # absent phases, J (A < 0: undersaturated)
+    warm_start: str = ""             # "kept": the start's assemblage solved as it was; "dropped": one less
 
     @property
     def melt_fraction(self) -> float:
@@ -160,7 +165,7 @@ class Equilibrator:
         return g0 + mu_mixing(to_components(liq).x, t_k)
 
     # ---- solve one assemblage ----------------------------------------------------------------
-    def _solve(self, present, t_c, p, guess):
+    def _solve(self, present, t_c, p, guess, stall=False):
         t = t_c + 273.15
         layout = [(ph, e) for ph in present for e in ph.end_members]
 
@@ -204,7 +209,7 @@ class Equilibrator:
             res = np.array(res)
             return res if np.all(np.isfinite(res)) else None
 
-        sol = _newton(residual, np.asarray(guess, float))
+        sol = _newton(residual, np.asarray(guess, float), stall=stall)
         n, solid_ox = unpack(sol.x)
         return sol, n, layout, solid_ox
 
@@ -216,6 +221,16 @@ class Equilibrator:
             yield ph, n[i:i + m]
             i += m
 
+    def step_from(self, t_c: float, p_bar: float, start: "EquilibriumResult | None", depth: int = 0
+                  ) -> EquilibriumResult:
+        """equilibrate(t_c, start=start), going through halfway temperatures when the start's whole
+        assemblage cannot be carried over in one step (large changes near phase-out boundaries)."""
+        r = self.equilibrate(t_c, p_bar, start=start)
+        if start is None or r.warm_start == "kept" or depth >= 2 or abs(t_c - start.t_c) < 0.5:
+            return r
+        mid = self.step_from(0.5 * (t_c + start.t_c), p_bar, start, depth + 1)
+        return self.equilibrate(t_c, p_bar, start=mid)
+
     def equilibrate(self, t_c: float, p_bar: float = 1.0, max_iter: int = 20,
                     start: "EquilibriumResult | None" = None) -> EquilibriumResult:
         """start: a result at a nearby T (the previous step of a path); its solids, scaled to this
@@ -226,26 +241,32 @@ class Equilibrator:
         n = np.array([])
         layout, solid_ox = [], {}
         skipped: set[str] = set()
+        warm = ""
         if start is not None and start.solids:
             by_name = {ph.name: ph for ph in self.phases}
             scale = sum(self.bulk_grams.values()) / (start.liquid_grams + sum(s.grams for s in start.solids))
-            trial, tguess = [], []
+            trial, tguess, grams_k = [], [], []
             for s_ in start.solids:
                 if s_.name in by_name and s_.grams > 0:
                     ph = by_name[s_.name]
                     x = np.array([s_.x[e] for e in ph.end_members])
                     trial.append(ph)
+                    grams_k.append(s_.grams)
                     tguess.append(ph.params_from(x, max(sum(s_.moles.values()) * scale * 0.98, 1e-8)))
             # the previous assemblage, else the same without one phase (one that is running out)
+            # smallest first: the phase that is running out is usually the one with least left
+            by_size = sorted(range(len(trial)), key=lambda j: grams_k[j])
             options = [list(range(len(trial)))] + [[k for k in range(len(trial)) if k != j]
-                                                  for j in range(len(trial))] if len(trial) > 1 else [[0]]
-            for keep in options:
+                                                  for j in by_size] if len(trial) > 1 else [[0]]
+            for i_opt, keep in enumerate(options):
                 if not keep:
                     continue
                 ph_k = [trial[k] for k in keep]
-                sol, tn, tlayout, tsolid = self._solve(ph_k, t_c, p_bar, np.concatenate([tguess[k] for k in keep]))
+                sol, tn, tlayout, tsolid = self._solve(ph_k, t_c, p_bar, np.concatenate([tguess[k] for k in keep]),
+                                                      stall=True)   # carrying a start over: give up early
                 if sol.success and all(nk.sum() > 0 for _, nk in self._split(ph_k, tn)):
                     present, guess, n, layout, solid_ox = ph_k, sol.x, tn, tlayout, tsolid
+                    warm = "kept" if i_opt == 0 else "dropped"
                     break
         for _ in range(max_iter):
             liq = self._liquid(solid_ox, t_c, p_bar)
@@ -294,7 +315,7 @@ class Equilibrator:
                     n, layout, solid_ox = np.array([]), [], {}
         liq = self._liquid(solid_ox, t_c, p_bar)
         mu_l = self._mu_liquid(liq, t, p_bar)
-        result = EquilibriumResult(t_c, p_bar, liq.normalized(), liq.total)
+        result = EquilibriumResult(t_c, p_bar, liq.normalized(), liq.total, warm_start=warm)
         i = 0
         for ph in present:
             m = len(ph.end_members)

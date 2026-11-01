@@ -121,13 +121,30 @@ def order(r, t, p):
         g, dg = g_and_grad(np.concatenate([r, full(sf)]), t, p)
         return g, dg[4:][free]
 
+    key = (t, p, len(free))
+    for r_old, sf_old in _CACHE.get(key, ()):   # a nearby composition: Newton from its ordering
+        if np.max(np.abs(r_old - r)) < 0.02:
+            sf = _polish(r, sf_old.copy(), free, t, p)
+            z = np.concatenate([r, full(sf)])
+            if (site_fractions(z)[rows].min() > 0
+                    and np.max(np.abs(g_and_grad(z, t, p)[1][4:][free])) < 1e-8):
+                return full(sf), g_and_grad(z, t, p)[0]
+            break
     cons = [{"type": "ineq", "fun": lambda sf: base[rows] + ca @ sf - 1e-12, "jac": lambda sf: ca}]
     s0 = _random_s(r)[free]
     res = minimize(f, s0, jac=True, method="SLSQP", constraints=cons, options=dict(ftol=1e-14, maxiter=200))
     sf = res.x if np.all(base[rows] + ca @ res.x > -1e-10) else s0
     sf = _polish(r, sf, free, t, p)
+    entries = _CACHE.setdefault(key, [])
+    entries.insert(0, (r.copy(), sf.copy()))
+    del entries[8:]
+    if len(_CACHE) > 64:
+        _CACHE.clear()
     s = full(sf)
     return s, g_and_grad(np.concatenate([r, s]), t, p)[0]
+
+
+_CACHE: dict = {}       # (T, P, number of free s) -> recent (r, s): orderings to start Newton from
 
 
 def _polish(r, sf, free, t, p, tol=1e-10):

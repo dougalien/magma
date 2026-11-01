@@ -1,11 +1,31 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
-let INFO = null, MODE = "equilibrium";
+let INFO = null, MODE = "equilibrium", PROCESS = "crystallize";
 const HINTS = {
-  equilibrium: "The crystals stay with the melt and keep reacting with it (a closed system).",
-  fractional: "The crystals are taken out at each step; the next step starts from the remaining melt.",
+  crystallize: {
+    equilibrium: "The crystals stay with the melt and keep reacting with it (a closed system).",
+    fractional: "The crystals are taken out at each step; the next step starts from the remaining melt.",
+  },
+  melt: {
+    equilibrium: "Batch melting: the melt stays with the rock and keeps reacting with it. Starts at the solidus.",
+    fractional: "The melt above 1% of the rock is taken out at each step and pooled; the residue keeps melting.",
+  },
 };
+function hint() { $("mode-hint").textContent = HINTS[PROCESS][MODE]; }
+function setProcess(p) {
+  PROCESS = p;
+  document.querySelectorAll("#process button").forEach((x) => x.classList.toggle("on", x.dataset.process === p));
+  $("mode-eq").textContent = p === "melt" ? "Batch" : "Equilibrium";
+  $("start-legend").textContent = p === "melt" ? "Starting rock" : "Starting melt";
+  const a = +$("t_start").value, b = +$("t_end").value;
+  if ((p === "melt") === (a > b)) { $("t_start").value = b; $("t_end").value = a; }
+  if (p === "melt" && INFO.presets["KLB-1 peridotite"] && $("preset").value !== "custom") {
+    $("preset").value = "KLB-1 peridotite"; fillPreset("KLB-1 peridotite");
+    $("t_start").value = 1250; $("t_end").value = 1500; $("step").value = 10; $("p_bar").value = 10000;
+  }
+  hint();
+}
 
 function openResults() { window.open("/results", "magma-results"); }
 
@@ -31,9 +51,9 @@ function inputs() {
   const b = $("buffer").value, off = parseFloat($("offset").value) || 0;
   const fo2 = b === "closed" ? "closed" : off ? `${b}${off > 0 ? "+" : ""}${off}` : b;
   const phases = [...document.querySelectorAll("#phases .chip.on")].map((c) => c.dataset.name);
-  const name = $("preset").value === "custom" ? "Custom melt" : $("preset").value;
+  const name = $("preset").value === "custom" ? (PROCESS === "melt" ? "Custom rock" : "Custom melt") : $("preset").value;
   return { name, bulk, t_start: +$("t_start").value, t_end: +$("t_end").value, step: +$("step").value,
-    p_bar: +$("p_bar").value, fo2, mode: MODE, phases };
+    p_bar: +$("p_bar").value, fo2, mode: MODE, process: PROCESS, phases };
 }
 
 async function run() {
@@ -78,9 +98,10 @@ async function init() {
   document.querySelectorAll("#mode button").forEach((b) => b.addEventListener("click", () => {
     MODE = b.dataset.mode;
     document.querySelectorAll("#mode button").forEach((x) => x.classList.toggle("on", x === b));
-    $("mode-hint").textContent = HINTS[MODE];
+    hint();
   }));
-  $("mode-hint").textContent = HINTS[MODE];
+  document.querySelectorAll("#process button").forEach((b) => b.addEventListener("click", () => setProcess(b.dataset.process)));
+  hint();
   $("buffer").addEventListener("change", () => { $("offset-wrap").style.display = $("buffer").value === "closed" ? "none" : ""; });
   $("run").addEventListener("click", run);
   $("stop").addEventListener("click", () => api("/api/stop"));

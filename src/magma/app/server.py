@@ -21,6 +21,7 @@ from .. import __version__
 import numpy as np
 
 from ..composition import OXIDES, PRESETS, Composition
+from ..melting import iter_melt
 from ..path import iter_crystallize
 from ..thermo.phases import PHASES
 
@@ -43,8 +44,13 @@ NOTES = [
     "(Frost 1991), or fixed by the starting Fe2O3 when the system is closed to oxygen.",
     "MnO, NiO, CoO and CO2 are not part of the liquid model and are left out of the calculation.",
     "Water stays dissolved in the liquid (no fluid phase yet).",
-    "Masses are grams per 100 g of starting melt. In fractional mode the solids of each step are "
-    "removed, and the solid masses shown are the totals removed so far.",
+    "Masses are grams per 100 g of starting material. In fractional crystallization the solids of each "
+    "step are removed, and the solid masses shown are the totals removed so far.",
+    "Melting: batch melting is equilibrium, computed by cooling the rock's composition from above its "
+    "liquidus and shown from low to high temperature; it starts at the solidus, which Magma cannot cross "
+    "yet. Fractional melting removes the melt above 1% of the residue at each step and pools it. "
+    "Garnet is not in the model, so peridotite melting is right only in the spinel field (below about 2 GPa). "
+    "The lowest-degree melts are too rich in Na2O, as in MELTS.",
 ]
 
 
@@ -91,7 +97,7 @@ class State:
         self.inputs = inputs
         self.steps = []
         self.status, self.message = "running", ""
-        n = int(round((kw["t_start"] - kw["t_end"]) / kw["step"])) + 1
+        n = int(round(abs(kw["t_start"] - kw["t_end"]) / kw["step"])) + 1
         self.progress = [0, n]
         self.changed()
         threading.Thread(target=self._run, args=(bulk, kw), daemon=True).start()
@@ -102,6 +108,9 @@ class State:
     def _run(self, bulk: Composition, kw: dict) -> None:
         removed: dict[str, float] = {}
         try:
+            if kw["process"] == "melt":
+                return self._run_melt(bulk, kw)
+            kw = {k: v for k, v in kw.items() if k != "process"}
             for r in iter_crystallize(bulk, **kw):
                 step = step_json(r)
                 if kw["mode"] == "fractional":
@@ -129,6 +138,44 @@ class State:
             self.status, self.message = "error", f"{type(exc).__name__}: {exc}"
         self.changed()
 
+    def _run_melt(self, bulk: Composition, kw: dict) -> None:
+        def progress(k, n):
+            self.progress = [k, n]
+            self.changed()
+            if self._stop.is_set():
+                raise _Stopped()
+        args = dict(kw, mode="batch" if kw["mode"] == "equilibrium" else "fractional")
+        args.pop("process")
+        try:
+            for m in iter_melt(bulk, on_progress=progress if args["mode"] == "batch" else None, **args):
+                step = step_json(m.result)
+                step["extracted_grams"] = m.extracted_grams
+                step["pooled_grams"] = m.pooled_grams
+                if m.pooled is not None:
+                    step["pooled"] = {ox: m.pooled.get(ox) for ox in OXIDES if m.pooled.get(ox) > 0}
+                    step["pooled_mg"] = m.pooled.mg_number
+                self.steps.append(step)
+                if args["mode"] == "fractional":
+                    self.progress = [len(self.steps), self.progress[1]]
+                self.changed()
+                if self._stop.is_set():
+                    raise _Stopped()
+            self.status = "done"
+            if not self.steps:
+                self.message = "The rock does not melt at these temperatures (below its solidus)."
+            elif self.steps[0]["t"] > kw["t_start"] + 1e-6:
+                self.message = (f"Melting starts near {self.steps[0]['t']:.0f} °C, the lowest temperature "
+                                "Magma could follow (the solidus).")
+        except _Stopped:
+            self.status, self.message = "stopped", "Stopped."
+        except Exception as exc:
+            self.status, self.message = "error", f"{type(exc).__name__}: {exc}"
+        self.changed()
+
+
+class _Stopped(Exception):
+    pass
+
 
 def parse_inputs(d: dict) -> tuple[Composition, dict]:
     wt = {}
@@ -151,12 +198,17 @@ def parse_inputs(d: dict) -> tuple[Composition, dict]:
         raise ValueError("pick at least one mineral")
     kw = dict(t_start=float(d.get("t_start", 1250)), t_end=float(d.get("t_end", 1150)),
               step=float(d.get("step", 5)), p_bar=float(d.get("p_bar", 1)),
-              fo2=_fo2_arg(d.get("fo2", "QFM")), mode=d.get("mode", "equilibrium"), phases=tuple(phases))
+              fo2=_fo2_arg(d.get("fo2", "QFM")), mode=d.get("mode", "equilibrium"), phases=tuple(phases),
+              process=d.get("process", "crystallize"))
     if kw["mode"] not in ("equilibrium", "fractional"):
         raise ValueError("mode must be equilibrium or fractional")
-    if not 600 <= kw["t_end"] <= kw["t_start"] <= 2000:
-        raise ValueError("temperatures must run downward, between 600 and 2000 C")
-    if kw["step"] <= 0 or (kw["t_start"] - kw["t_end"]) / kw["step"] > 400:
+    if kw["process"] not in ("crystallize", "melt"):
+        raise ValueError("process must be crystallize or melt")
+    if kw["process"] == "crystallize" and not 600 <= kw["t_end"] <= kw["t_start"] <= 2000:
+        raise ValueError("cooling: temperatures must run downward, between 600 and 2000 C")
+    if kw["process"] == "melt" and not 600 <= kw["t_start"] <= kw["t_end"] <= 2000:
+        raise ValueError("heating: temperatures must run upward, between 600 and 2000 C")
+    if kw["step"] <= 0 or abs(kw["t_start"] - kw["t_end"]) / kw["step"] > 400:
         raise ValueError("the step must be positive, with at most 400 steps")
     if not 1 <= kw["p_bar"] <= 30000:
         raise ValueError("pressure must be between 1 and 30000 bar")

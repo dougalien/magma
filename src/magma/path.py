@@ -32,7 +32,7 @@ def iter_crystallize(bulk: Composition, t_start: float, t_end: float, step: floa
     n = int(round((t_start - t_end) / step))
     for k in range(n + 1):
         t = t_start - k * step
-        r = Equilibrator(current, fo2=fo2, phases=phases).equilibrate(t, p_bar, start=prev)
+        r = Equilibrator(current, fo2=fo2, phases=phases).step_from(t, p_bar, prev)
         if prev is not None and prev.melt_fraction < SOLIDUS_MELT and r.melt_fraction > prev.melt_fraction + 0.002:
             return                               # the previous assemblage could not be followed: solidus
         prev = copy.deepcopy(r) if mode == "equilibrium" else None

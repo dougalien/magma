@@ -24,8 +24,9 @@ function series(steps) {
   const x = steps.map((s) => s.t);
   if (VIEW === "mass") {
     const out = [{ label: "Melt", color: color("var(--s1)"), y: steps.map((s) => s.liquid_grams) }];
+    if (steps.some((s) => s.pooled_grams > 0)) out.push({ label: "Melt removed (total)", color: color("var(--s1)"), dash: "5 4", y: steps.map((s) => s.pooled_grams || 0) });
     phaseNames(steps).forEach((n, i) => out.push({ label: label(steps, n), color: color(COLORS[(i + 1) % 8]), y: steps.map((s) => grams(s, n)) }));
-    return { x, s: out, opts: { yLabel: "grams per 100 g of starting melt" } };
+    return { x, s: out, opts: { yLabel: "grams per 100 g of starting material" } };
   }
   if (VIEW === "liquid") {
     const ox = Object.keys(steps[0].liquid).filter((o) => o !== "H2O");
@@ -52,10 +53,32 @@ function draw() {
   const { x, s, opts } = series(ST.steps);
   plot.set(x, s, Object.assign({ xLabel: "temperature, °C", xName: "", xUnit: " °C", hoverFixed: 2 }, opts));
   $("legend").replaceChildren(...s.map((q) => h("span", {}, h("span", { class: "sw", style: `border-color:${q.color}${q.dash ? ";border-top-style:dashed" : ""}` }), q.label)));
-  $("axisnote").textContent = ST.inputs.mode === "fractional" && VIEW === "mass" ? "Crystal masses are the totals removed so far." : "";
+  const melting = ST.inputs.process === "melt";
+  $("axisnote").textContent = ST.inputs.mode === "fractional" && VIEW === "mass"
+    ? (melting ? "Mineral masses are what is left in the residue; the melt left in it is 1%." : "Crystal masses are the totals removed so far.") : "";
+}
+
+function meltStory(st) {
+  const steps = st.steps, out = [], first = steps[0], last = steps[steps.length - 1];
+  const frac = st.inputs.mode === "fractional";
+  out.push(`At ${first.t.toFixed(0)} °C the rock is ${first.melt_pct.toFixed(1)}% melt; its residue is ${first.solids.map((p) => p.label.toLowerCase()).join(", ")}.`);
+  const gone = [];
+  for (let i = 1; i < steps.length; i++) steps[i - 1].solids.forEach((p) => {
+    if (p.grams > 1e-3 && !steps[i].solids.some((q) => q.name === p.name && q.grams > 1e-6) && !gone.find((g) => g.n === p.name)) gone.push({ n: p.name, l: p.label, t: steps[i].t });
+  });
+  if (gone.length) out.push(`Used up: ${gone.map((g) => `${g.l.toLowerCase()} by ${g.t.toFixed(0)} °C`).join(", ")}.`);
+  if (frac) {
+    const pm = last.pooled;
+    out.push(`By ${last.t.toFixed(0)} °C, ${last.pooled_grams.toFixed(1)} g of melt has been removed from 100 g of rock` +
+      (pm ? `; the pooled melt has ${pm.SiO2.toFixed(1)} wt% SiO2, ${pm.MgO.toFixed(1)} wt% MgO and Mg# ${last.pooled_mg.toFixed(0)}.` : "."));
+  } else {
+    out.push(`At ${last.t.toFixed(0)} °C the rock is ${last.melt_pct.toFixed(1)}% melt, with ${last.liquid.SiO2.toFixed(1)} wt% SiO2, ${(last.liquid.MgO ?? 0).toFixed(1)} wt% MgO and Mg# ${last.mg_number.toFixed(0)}.`);
+  }
+  return out;
 }
 
 function story(st) {
+  if (st.inputs.process === "melt") return meltStory(st);
   const steps = st.steps, out = [];
   const first = steps.find((s) => s.solids.some((p) => p.grams > 1e-6));
   const t0 = steps[0].t, last = steps[steps.length - 1];
@@ -109,7 +132,9 @@ function show(st) {
   pill.className = `pill ${st.status === "error" ? "bad" : st.status === "running" ? "warn" : "ok"}`;
   if (!has) return;
   const i = st.inputs;
-  $("title").textContent = `${i.name || "Melt"}: ${i.mode} crystallization`;
+  const melting = i.process === "melt";
+  $("title").textContent = melting ? `${i.name || "Rock"}: ${i.mode === "fractional" ? "fractional" : "batch"} melting`
+    : `${i.name || "Melt"}: ${i.mode} crystallization`;
   $("meta").textContent = `${i.t_start} to ${i.t_end} °C in ${i.step} °C steps, ${i.p_bar} bar, oxygen ${i.fo2 === "closed" ? "closed system" : i.fo2}`;
   $("story").replaceChildren(...story(st).map((t) => h("p", {}, t)), ...(st.status === "error" ? [h("div", { class: "errbox" }, st.message)] : st.message && st.status === "done" ? [h("p", {}, st.message)] : []));
   $("notes").replaceChildren(...st.notes.map((n) => h("li", {}, n)));
