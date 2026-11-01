@@ -39,6 +39,7 @@ function series(steps) {
   add("feldspar", "An", "Plagioclase An", "var(--s2)");
   add("clinopyroxene", "Mg#", "Clinopyroxene Mg#", "var(--s4)");
   add("clinopyroxene", "Wo", "Clinopyroxene Wo", "var(--s5)", "5 4");
+  add("orthopyroxene", "Mg#", "Orthopyroxene Mg#", "var(--s7)");
   out.push({ label: "Melt Mg# ", color: color("var(--s6)"), dash: "5 4", y: steps.map((s) => s.mg_number) });
   return { x, s: out, opts: { yLabel: "mol%" } };
 }

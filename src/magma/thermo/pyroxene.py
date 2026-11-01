@@ -1,4 +1,4 @@
-"""Clinopyroxene: the MELTS model of Sack and Ghiorso (1994c), written for Magma.
+"""Clinopyroxene and orthopyroxene: the MELTS model of Sack and Ghiorso (1994c), written for Magma.
 
 Seven end members (values in data/melts_minerals.tsv, from ThermoEngine CpxBerman.m):
     diopside CaMgSi2O6, clinoenstatite Mg2Si2O6, hedenbergite CaFeSi2O6,
@@ -37,44 +37,52 @@ END_MEMBERS = ("diopside", "clinoenstatite", "hedenbergite", "alumino-buffonite"
 _EPS = 1e-300
 
 
-def _load_terms():
-    text = resources.files("magma.data").joinpath("melts_cpx_taylor.tsv").read_text("utf-8")
-    rows = [ln.split("\t") for ln in text.splitlines() if ln and not ln.startswith("#")][1:]
-    idx = {f"X{k}": k - 2 for k in range(2, 8)}
-    idx.update({"S1": 6, "S2": 7})
-    deg = np.zeros((len(rows), 8), int)
-    hsv = np.zeros((len(rows), 3))
-    for k, (name, h, s, v) in enumerate(rows):
-        if name != "0":
-            for i in range(0, len(name), 2):
-                deg[k, idx[name[i:i + 2]]] += 1
-        hsv[k] = float(h), float(s), float(v)
-    return deg, hsv
+class Taylor:
+    """The cubic Taylor expansion of one pyroxene structure: G = sum (H - T S + (P-1) V) * monomial."""
+
+    def __init__(self, filename: str):
+        text = resources.files("magma.data").joinpath(filename).read_text("utf-8")
+        rows = [ln.split("\t") for ln in text.splitlines() if ln and not ln.startswith("#")][1:]
+        idx = {f"X{k}": k - 2 for k in range(2, 8)}
+        idx.update({"S1": 6, "S2": 7})
+        self.deg = np.zeros((len(rows), 8), int)
+        self.hsv = np.zeros((len(rows), 3))
+        for k, (name, h, s, v) in enumerate(rows):
+            if name != "0":
+                for i in range(0, len(name), 2):
+                    self.deg[k, idx[name[i:i + 2]]] += 1
+            self.hsv[k] = float(h), float(s), float(v)
+        # derivative of every monomial with respect to each variable: factor deg, lowered powers
+        self.ddeg = np.stack([np.maximum(self.deg - np.eye(8, dtype=int)[j], 0) for j in range(8)])
+        self.dfac = self.deg.T.astype(float)
+        self._cache: dict = {}
+
+    def coef(self, t, p) -> np.ndarray:
+        key = (t, p)
+        c = self._cache.get(key)
+        if c is None:
+            if len(self._cache) > 512:
+                self._cache.clear()
+            c = self._cache[key] = self.hsv[:, 0] - t * self.hsv[:, 1] + (p - 1.0) * self.hsv[:, 2]
+        return c
+
+    def poly(self, z, t, p) -> float:
+        mono = np.prod(np.power(np.asarray(z, float)[None, :], self.deg), axis=1)
+        return float(mono @ self.coef(t, p))
+
+    def grad(self, z, t, p) -> np.ndarray:
+        z = np.asarray(z, float)
+        mono = np.prod(np.power(z[None, None, :], self.ddeg), axis=2) * self.dfac
+        return mono @ self.coef(t, p)
 
 
-_DEG, _HSV = _load_terms()
+CPX = Taylor("melts_cpx_taylor.tsv")
+OPX = Taylor("melts_opx_taylor.tsv")
 
 
-# derivative of every monomial with respect to each variable: factor deg and lowered powers
-_DDEG = np.stack([np.maximum(_DEG - np.eye(8, dtype=int)[j], 0) for j in range(8)])   # 8 x terms x 8
-_DFAC = _DEG.T.astype(float)                                                           # 8 x terms
-
-
-@lru_cache(maxsize=256)
-def _coef(t: float, p: float) -> np.ndarray:
-    return _HSV[:, 0] - t * _HSV[:, 1] + (p - 1.0) * _HSV[:, 2]
-
-
-def poly(z, t, p) -> float:
+def poly(z, t, p, tay: Taylor = CPX) -> float:
     """Non-configurational G of the Taylor expansion at z = (r0..r5, s0, s1)."""
-    mono = np.prod(np.power(np.asarray(z, float)[None, :], _DEG), axis=1)
-    return float(mono @ _coef(t, p))
-
-
-def poly_grad(z, t, p) -> np.ndarray:
-    z = np.asarray(z, float)
-    mono = np.prod(np.power(z[None, None, :], _DDEG), axis=2) * _DFAC      # 8 x terms
-    return mono @ _coef(t, p)
+    return tay.poly(z, t, p)
 
 
 # The configurational entropy as -R sum_k c_k v_k ln v_k with every v_k affine in z = (r, s).
@@ -194,18 +202,18 @@ def s_bounds(r):
     return (lo0, hi0), (lo1, hi1)
 
 
-def g_rs(r, s, t, p) -> float:
+def g_rs(r, s, t, p, tay: Taylor = CPX) -> float:
     z = np.concatenate([r, s])
-    return poly(z, t, p) - t * entropy_and_grad(z)[0]
+    return tay.poly(z, t, p) - t * entropy_and_grad(z)[0]
 
 
-def g_and_grad(z, t, p):
+def g_and_grad(z, t, p, tay: Taylor = CPX):
     """G(r, s) and its partial derivatives with respect to the 8 variables."""
     s, ds = entropy_and_grad(z)
-    return poly(z, t, p) - t * s, poly_grad(z, t, p) - t * ds
+    return tay.poly(z, t, p) - t * s, tay.grad(z, t, p) - t * ds
 
 
-def order(r, t, p, tol=1e-9):
+def order(r, t, p, tay: Taylor = CPX, tol=1e-9):
     """(s, G) with s minimizing G at fixed r."""
     bounds = []
     for lo, hi in s_bounds(r):
@@ -218,7 +226,7 @@ def order(r, t, p, tol=1e-9):
     r = np.asarray(r, float)
 
     def f(s):
-        g, dg = g_and_grad(np.concatenate([r, s]), t, p)
+        g, dg = g_and_grad(np.concatenate([r, s]), t, p, tay)
         return g, dg[6:]
 
     res = minimize(f, s_start, jac=True, method="L-BFGS-B", bounds=bounds,
@@ -259,17 +267,26 @@ def _site_margins(z) -> np.ndarray:
 
 
 # starting compositions for the affinity search (end-member mole fractions)
-_STARTS = [np.array(v, float) for v in (
+_AUGITE = [np.array(v, float) for v in (
     [0.55, 0.15, 0.15, 0.04, 0.02, 0.06, 0.03],     # augite
     [0.20, 0.60, 0.12, 0.02, 0.01, 0.03, 0.02],     # pigeonite-like
     [0.75, 0.05, 0.05, 0.05, 0.02, 0.05, 0.03],     # diopside
 )]
+_OPX = [np.array(v, float) for v in (
+    [0.06, 0.74, 0.14, 0.02, 0.0, 0.03, 0.01],      # bronzite
+    [0.10, 0.55, 0.30, 0.02, 0.0, 0.02, 0.01],      # hypersthene
+    [0.20, 0.60, 0.12, 0.02, 0.01, 0.03, 0.02],     # pigeonite-like
+)]
 
 
-class Clinopyroxene:
-    name = "clinopyroxene"
+class Pyroxene:
+    """Clinopyroxene or orthopyroxene: the same composition space and end-member reference
+    states, different Taylor coefficients."""
     end_members = END_MEMBERS
     n_params = 7               # log N and r
+
+    def __init__(self, name: str, tay: Taylor, starts):
+        self.name, self.tay, self.starts = name, tay, starts
 
     def g0(self, t, p) -> np.ndarray:
         return np.array([MINERALS[e].gibbs(t, p) for e in END_MEMBERS])
@@ -283,7 +300,7 @@ class Clinopyroxene:
         return bool(_site_margins(np.concatenate([r, [0.5 * (lo0 + hi0), 0.5 * (lo1 + hi1)]])).min() >= -1e-10)
 
     def g_mix(self, x, t, p) -> float:
-        _, g = order(r_from_x(x), t, p)
+        _, g = order(r_from_x(x), t, p, self.tay)
         return g - float(np.asarray(x) @ end_member_g(t, p))
 
     def gibbs(self, x, t, p) -> float:
@@ -294,8 +311,8 @@ class Clinopyroxene:
         """Chemical potentials of the end members.  With g(r) the molar G at the equilibrium
         ordering and r linear in x, mu_j = g0_j - E_j + g + sum_k dg/dr_k (r_k(e_j) - r_k)."""
         r = r_from_x(x)
-        s, _ = order(r, t, p)
-        g, dg = g_and_grad(np.concatenate([r, s]), t, p)
+        s, _ = order(r, t, p, self.tay)
+        g, dg = g_and_grad(np.concatenate([r, s]), t, p, self.tay)
         grad = dg[:6]                    # at the equilibrium ordering, dG/dr = partial dG/dr
         return self.g0(t, p) - end_member_g(t, p) + g + (_RX - r) @ grad
 
@@ -317,20 +334,23 @@ class Clinopyroxene:
         dz = np.concatenate([d @ _XR, [0.0, 0.0]])          # d(x . d)/dz
 
         def f(z):
-            g, dg = g_and_grad(z, t, p)
+            g, dg = g_and_grad(z, t, p, self.tay)
             return float(x_from_r(z[:6]) @ d) + g, dg + dz
 
         cons = [{"type": "ineq", "fun": _site_margins}]
         best = None
-        for x0 in _STARTS:
+        for x0 in self.starts:
             r0 = r_from_x(x0)
             z0 = np.concatenate([r0, [0.5 * (lo + hi) for lo, hi in s_bounds(r0)]])
             res = minimize(f, z0, jac=True, method="SLSQP", constraints=cons,
                            options=dict(maxiter=500, ftol=1e-12))
-            if best is None or res.fun < best.fun:
+            if (np.all(np.isfinite(res.x)) and _site_margins(res.x).min() > -1e-8
+                    and (best is None or res.fun < best.fun)):
                 best = res
+        if best is None:
+            return -np.inf, self.starts[0]
         r = best.x[:6]
-        return -float(f(np.concatenate([r, order(r, t, p)[0]]))[0]), x_from_r(r)
+        return -float(f(np.concatenate([r, order(r, t, p, self.tay)[0]]))[0]), x_from_r(r)
 
     @staticmethod
     def formula(x) -> str:
@@ -340,3 +360,7 @@ class Clinopyroxene:
         mg = 1 - r[0] - r[3] - 0.5 * (r[1] + r[2] + r[4]) + r[5]          # Mg on M1 + M2
         tot = ca + mg + fe
         return f"Wo{100 * ca / tot:.0f} En{100 * mg / tot:.0f} Fs{100 * fe / tot:.0f}"
+
+
+CLINOPYROXENE = Pyroxene("clinopyroxene", CPX, _AUGITE)
+ORTHOPYROXENE = Pyroxene("orthopyroxene", OPX, _OPX)

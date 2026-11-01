@@ -158,7 +158,6 @@ class SolutionPhase:
 
 OLIVINE = SolutionPhase("olivine", ("forsterite", "fayalite"), g_ex_olivine, sites=2.0)
 FELDSPAR = SolutionPhase("feldspar", ("albite", "anorthite", "sanidine"), g_ex_feldspar)
-from .pyroxene import Clinopyroxene      # noqa: E402  (uses OXIDES_OF and mu_in_liquid above)
+from .pyroxene import CLINOPYROXENE, ORTHOPYROXENE      # noqa: E402
 
-CLINOPYROXENE = Clinopyroxene()
-PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE)}
+PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE, ORTHOPYROXENE)}

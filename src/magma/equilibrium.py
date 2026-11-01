@@ -16,7 +16,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
-from scipy.optimize import least_squares
 
 from .composition import FEO_PER_FE2O3, MOLAR_MASS, Composition
 from .redox import fe3_ratio
@@ -31,6 +30,54 @@ def _oxide_vector(end_member: str) -> dict[str, float]:
 
 def _grams(oxides: dict[str, float]) -> float:
     return sum(n * MOLAR_MASS[o] for o, n in oxides.items())
+
+
+@dataclass
+class _Solution:
+    x: np.ndarray
+    norm: float
+    success: bool
+
+
+def _newton(residual, y, tol=1e-9, max_iter=60, h=1e-7) -> _Solution:
+    """Damped Gauss-Newton with a finite-difference Jacobian.  `residual` returns None outside the
+    feasible region (a solid exceeding the bulk, or an impossible site occupancy); steps are halved
+    until they stay feasible and reduce the residual."""
+    r = residual(y)
+    if r is None:
+        return _Solution(y, np.inf, False)
+    norm = float(np.linalg.norm(r))
+    for _ in range(max_iter):
+        if norm < tol:
+            break
+        jac = np.empty((len(r), len(y)))
+        for j in range(len(y)):
+            dy = h * max(1.0, abs(y[j]))
+            yp = y.copy()
+            yp[j] += dy
+            rp = residual(yp)
+            if rp is None:
+                yp[j] -= 2 * dy
+                rp = residual(yp)
+                if rp is None:
+                    return _Solution(y, norm, False)
+                dy = -dy
+            jac[:, j] = (rp - r) / dy
+        step = np.linalg.lstsq(jac, -r, rcond=None)[0]
+        big = np.max(np.abs(step))
+        if big > 1.0:                        # at most a factor e in any amount, 1 in any fraction
+            step /= big
+        lam, accepted = 1.0, False
+        while lam > 1e-8:
+            y_new = y + lam * step
+            r_new = residual(y_new)
+            if r_new is not None and np.linalg.norm(r_new) < (1 - 1e-4 * lam) * norm:
+                y, r, norm, accepted = y_new, r_new, float(np.linalg.norm(r_new)), True
+                break
+            lam *= 0.5
+        if not accepted:
+            break
+    return _Solution(y, norm, norm < 1e-6)
 
 
 @dataclass
@@ -66,11 +113,12 @@ class EquilibriumResult:
 class Equilibrator:
     """Equilibrium of one bulk composition (oxide wt%, i.e. grams per 100 g) at T, P, fO2."""
 
-    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar", "clinopyroxene")):
+    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene")):
         """fo2: a buffer ("QFM+1"), a log10 value, or None for a system closed to oxygen."""
         b = bulk.with_fe3_ratio(0.0)                     # carry iron as total FeO
         self.bulk_fe2o3 = bulk.moles().get("Fe2O3", 0.0)  # used when fo2 is None (closed to oxygen)
         self.bulk_moles = {o: v for o, v in b.moles().items() if o in MODEL_OXIDES or o == "FeO"}
+        self.bulk_grams = {o: v * MOLAR_MASS[o] for o, v in self.bulk_moles.items()}
         self.ignored = {o: v for o, v in bulk.wt.items() if o not in MODEL_OXIDES and v > 0}
         self.fo2 = fo2
         self.phases: list[SolutionPhase] = [PHASES[n] for n in phases]
@@ -118,14 +166,19 @@ class Equilibrator:
             return n, solid_ox
 
         def residual(y):
-            n, solid_ox = unpack(y)
+            try:
+                n, solid_ox = unpack(y)
+            except OverflowError:
+                return None
+            if not np.all(np.isfinite(n)):
+                return None
             try:
                 liq = self._liquid(solid_ox, t_c, p)
                 for ph, ni in self._split(present, n):
                     if hasattr(ph, "feasible_x") and not ph.feasible_x(ni / ni.sum()):
                         raise ValueError("infeasible solid composition")
             except ValueError:
-                return np.full(len(n), 1e3)
+                return None
             mu_l = self._mu_liquid(liq, t, p)
             res, i = [], 0
             for ph in present:
@@ -137,7 +190,7 @@ class Equilibrator:
                 i += m
             return np.array(res)
 
-        sol = least_squares(residual, guess, method="lm", xtol=1e-12, ftol=1e-12, max_nfev=4000)
+        sol = _newton(residual, np.asarray(guess, float))
         n, solid_ox = unpack(sol.x)
         return sol, n, layout, solid_ox
 
@@ -149,26 +202,54 @@ class Equilibrator:
             yield ph, n[i:i + m]
             i += m
 
-    def equilibrate(self, t_c: float, p_bar: float = 1.0, max_iter: int = 20) -> EquilibriumResult:
+    def equilibrate(self, t_c: float, p_bar: float = 1.0, max_iter: int = 20,
+                    start: "EquilibriumResult | None" = None) -> EquilibriumResult:
+        """start: a result at a nearby T (the previous step of a path); its solids, scaled to this
+        bulk, are the first guess.  Without it (or if that fails) solids are added one at a time."""
         t = t_c + 273.15
         present: list[SolutionPhase] = []
         guess = np.array([])
         n = np.array([])
         layout, solid_ox = [], {}
+        skipped: set[str] = set()
+        if start is not None and start.solids:
+            by_name = {ph.name: ph for ph in self.phases}
+            scale = sum(self.bulk_grams.values()) / (start.liquid_grams + sum(s.grams for s in start.solids))
+            trial, tguess = [], []
+            for s_ in start.solids:
+                if s_.name in by_name and s_.grams > 0:
+                    ph = by_name[s_.name]
+                    x = np.array([s_.x[e] for e in ph.end_members])
+                    trial.append(ph)
+                    tguess.append(ph.params_from(x, max(sum(s_.moles.values()) * scale * 0.98, 1e-8)))
+            # the previous assemblage, else the same without one phase (one that is running out)
+            options = [list(range(len(trial)))] + [[k for k in range(len(trial)) if k != j]
+                                                  for j in range(len(trial))] if len(trial) > 1 else [[0]]
+            for keep in options:
+                if not keep:
+                    continue
+                ph_k = [trial[k] for k in keep]
+                sol, tn, tlayout, tsolid = self._solve(ph_k, t_c, p_bar, np.concatenate([tguess[k] for k in keep]))
+                if sol.success and all(nk.sum() > 0 for _, nk in self._split(ph_k, tn)):
+                    present, guess, n, layout, solid_ox = ph_k, sol.x, tn, tlayout, tsolid
+                    break
         for _ in range(max_iter):
             liq = self._liquid(solid_ox, t_c, p_bar)
             mu_l = self._mu_liquid(liq, t, p_bar)
-            absent = [ph for ph in self.phases if ph not in present]
+            absent = [ph for ph in self.phases if ph not in present and ph.name not in skipped]
             aff = {ph.name: ph.affinity(mu_l, t, p_bar) for ph in absent}
             best = max(aff.items(), key=lambda kv: kv[1][0], default=None)
             if best is None or best[1][0] <= 1e-3:
                 break
             ph = next(p for p in absent if p.name == best[0])
             x = best[1][1]
-            present.append(ph)
-            guess = np.concatenate([guess, ph.params_from(x, 1e-3)])
-            sol, n, layout, solid_ox = self._solve(present, t_c, p_bar, guess)
-            guess = sol.x
+            trial = present + [ph]
+            tguess = np.concatenate([guess, ph.params_from(x, 1e-3)])
+            sol, tn, tlayout, tsolid = self._solve(trial, t_c, p_bar, tguess)
+            if not sol.success:
+                skipped.add(ph.name)             # cannot be added at this T; try the others
+                continue
+            present, guess, n, layout, solid_ox = trial, sol.x, tn, tlayout, tsolid
             # drop phases that have essentially vanished
             keep, i, j, g2 = [], 0, 0, []
             for p_ in present:

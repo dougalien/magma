@@ -51,3 +51,21 @@ def test_morb_crystallizes_augite():
     cpx = next(s for s in r.solids if s.name == "clinopyroxene")
     assert "Wo" in CLINOPYROXENE.formula(np.array(list(cpx.x.values())))
     assert 3 < cpx.grams < 20
+
+
+def test_orthopyroxene_matches_melts_definition_and_example():
+    from magma.thermo.phases import ORTHOPYROXENE
+    r, s = np.array([0.12, 0.05, -0.02, 0.08, 0.03, 0.15]), np.array([0.01, 0.05])
+    # OpxBerman.m's G macro (orthorhombic branch) at these r, s, 1220 C, 1000 bar
+    assert px.g_rs(r, s, T, P, px.OPX) == pytest.approx(-6312.9246138, abs=1e-4)
+    a, x = ORTHOPYROXENE.affinity(_mu(MELTS_LIQ, T, P), T, P)
+    assert a == pytest.approx(-2294.69, abs=150)               # MELTS: orthopyroxene 2294.69 J undersaturated
+    assert x[1] > 0.6                                          # enstatite-rich
+
+
+def test_morb_cooling_path_is_continuous():
+    from magma.path import crystallize
+    steps = crystallize(PRESETS["MORB"], 1150, 1110, 10)
+    melt = [s.melt_fraction for s in steps]
+    assert all(b < a for a, b in zip(melt, melt[1:]))           # melt keeps decreasing
+    assert all("clinopyroxene" in {x.name for x in s.solids} for s in steps)
