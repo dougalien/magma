@@ -33,10 +33,12 @@ function series(steps) {
       opts: { yLabel: "melt, wt%" } };
   }
   const out = [];
-  steps.some((s) => s.solids.find((p) => p.name === "olivine" && p.x.forsterite !== undefined)) &&
-    out.push({ label: "Olivine Fo (mol%)", color: color("var(--s3)"), y: steps.map((s) => { const p = s.solids.find((q) => q.name === "olivine"); return p && p.x.forsterite !== undefined ? 100 * p.x.forsterite : null; }) });
-  steps.some((s) => s.solids.find((p) => p.name === "feldspar" && p.x.anorthite !== undefined)) &&
-    out.push({ label: "Plagioclase An (mol%)", color: color("var(--s2)"), y: steps.map((s) => { const p = s.solids.find((q) => q.name === "feldspar"); return p && p.x.anorthite !== undefined ? 100 * p.x.anorthite : null; }) });
+  const num = (name, key) => steps.map((s) => { const p = s.solids.find((q) => q.name === name); return p && p.numbers && p.numbers[key] !== undefined && p.grams > 1e-9 ? p.numbers[key] : null; });
+  const add = (name, key, lab, col, dash) => { const y = num(name, key); if (y.some((v) => v !== null)) out.push({ label: lab, color: color(col), dash, y }); };
+  add("olivine", "Fo", "Olivine Fo", "var(--s3)");
+  add("feldspar", "An", "Plagioclase An", "var(--s2)");
+  add("clinopyroxene", "Mg#", "Clinopyroxene Mg#", "var(--s4)");
+  add("clinopyroxene", "Wo", "Clinopyroxene Wo", "var(--s5)", "5 4");
   out.push({ label: "Melt Mg# ", color: color("var(--s6)"), dash: "5 4", y: steps.map((s) => s.mg_number) });
   return { x, s: out, opts: { yLabel: "mol%" } };
 }
@@ -63,7 +65,7 @@ function story(st) {
       (st.inputs.mode === "fractional" ? ` (${last.liquid_grams.toFixed(1)} g of melt left from 100 g).` : ".") +
       ` The melt has ${last.liquid.SiO2.toFixed(1)} wt% SiO2 and Mg# ${last.mg_number.toFixed(0)}.`);
   }
-  if (first && last.t <= 1170) out.push("Below about 1170 °C a basalt would also crystallize clinopyroxene, which the model does not have yet; read these steps as a rough guide only.");
+  if (first && !(st.inputs.phases || []).includes("clinopyroxene")) out.push("Clinopyroxene was not allowed in this run.");
   return out;
 }
 

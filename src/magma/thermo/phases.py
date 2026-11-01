@@ -28,6 +28,13 @@ OXIDES_OF = {
     "albite": {"Na2O": 0.5, "Al2O3": 0.5, "SiO2": 3},
     "anorthite": {"CaO": 1, "Al2O3": 1, "SiO2": 2},
     "sanidine": {"K2O": 0.5, "Al2O3": 0.5, "SiO2": 3},
+    "diopside": {"CaO": 1, "MgO": 1, "SiO2": 2},
+    "clinoenstatite": {"MgO": 2, "SiO2": 2},
+    "hedenbergite": {"CaO": 1, "FeO": 1, "SiO2": 2},
+    "alumino-buffonite": {"CaO": 1, "TiO2": 0.5, "MgO": 0.5, "Al2O3": 0.5, "SiO2": 1},
+    "buffonite": {"CaO": 1, "TiO2": 0.5, "MgO": 0.5, "Fe2O3": 0.5, "SiO2": 1},
+    "essenite": {"CaO": 1, "Fe2O3": 0.5, "Al2O3": 0.5, "SiO2": 1},
+    "jadeite": {"Na2O": 0.5, "Al2O3": 0.5, "SiO2": 2},
 }
 
 
@@ -112,6 +119,27 @@ class SolutionPhase:
         x = np.asarray(x, float)
         return float(x @ self.g0(t, p)) + self.g_mix(x, t, p)
 
+    # amounts as solver parameters: log moles of each end member
+    @property
+    def n_params(self) -> int:
+        return len(self.end_members)
+
+    def n_from_params(self, prm) -> np.ndarray:
+        return np.exp(prm)
+
+    def params_from(self, x, n_total) -> np.ndarray:
+        return np.log(np.maximum(np.asarray(x) * n_total, 1e-12))
+
+    def x_of(self, n) -> np.ndarray:
+        return n / n.sum()
+
+    def formula(self, x) -> str:
+        if self.name == "olivine":
+            return f"Fo{100 * x[0]:.0f}"
+        if self.name == "feldspar":
+            return f"An{100 * x[1]:.0f} Ab{100 * x[0]:.0f} Or{100 * x[2]:.0f}"
+        return ""
+
     def affinity(self, mu_liq: np.ndarray, t: float, p: float) -> tuple[float, np.ndarray]:
         """(A, x): A > 0 means oversaturated; x is the composition at the minimum."""
         d = self.g0(t, p) - np.array([mu_in_liquid(e, mu_liq) for e in self.end_members])
@@ -130,4 +158,7 @@ class SolutionPhase:
 
 OLIVINE = SolutionPhase("olivine", ("forsterite", "fayalite"), g_ex_olivine, sites=2.0)
 FELDSPAR = SolutionPhase("feldspar", ("albite", "anorthite", "sanidine"), g_ex_feldspar)
-PHASES = {p.name: p for p in (OLIVINE, FELDSPAR)}
+from .pyroxene import Clinopyroxene      # noqa: E402  (uses OXIDES_OF and mu_in_liquid above)
+
+CLINOPYROXENE = Clinopyroxene()
+PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE)}

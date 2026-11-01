@@ -18,6 +18,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from .. import __version__
+import numpy as np
+
 from ..composition import OXIDES, PRESETS, Composition
 from ..path import iter_crystallize
 from ..thermo.phases import PHASES
@@ -26,12 +28,13 @@ STATIC = Path(__file__).resolve().parent / "static"
 PAGES = {"/": "control.html", "/control": "control.html", "/results": "results.html"}
 DEFAULT_PORT = 8766            # Reaction uses its own port; both apps can run at once
 MAX_BODY = 200_000
-PHASE_LABEL = {"olivine": "Olivine", "feldspar": "Plagioclase"}
+PHASE_LABEL = {"olivine": "Olivine", "feldspar": "Plagioclase", "clinopyroxene": "Clinopyroxene"}
 
 NOTES = [
     "Liquid: Ghiorso and Sack (1995) regular-solution model, with the parameter values used in MELTS.",
-    "Solids so far: olivine (Fe-Mg) and feldspar (Na-Ca-K). Clinopyroxene, orthopyroxene, spinel and "
-    "the Fe-Ti oxides are not in the model yet, so results below about 1170 C for basalt are not realistic.",
+    "Solids so far: olivine (Fe-Mg), feldspar (Na-Ca-K) and clinopyroxene (the seven-end-member MELTS "
+    "model of Sack and Ghiorso 1994). Orthopyroxene, spinel and the Fe-Ti oxides are not in the model "
+    "yet, so late, iron-rich melts that would crystallize magnetite or ilmenite are not right.",
     "Iron: Fe3+/Fe2+ of the liquid from Kress and Carmichael (1991) at the chosen oxygen buffer "
     "(Frost 1991), or fixed by the starting Fe2O3 when the system is closed to oxygen.",
     "MnO, NiO, CoO and CO2 are not part of the liquid model and are left out of the calculation.",
@@ -105,7 +108,8 @@ class State:
                     for name, g in removed.items():
                         if not any(s["name"] == name for s in step["solids"]):
                             step["solids"].append({"name": name, "label": PHASE_LABEL.get(name, name),
-                                                   "grams": g, "step_grams": 0.0, "x": {}, "formula": ""})
+                                                   "grams": g, "step_grams": 0.0, "x": {}, "numbers": {},
+                                                   "formula": ""})
                 self.steps.append(step)
                 self.progress = [len(self.steps), self.progress[1]]
                 self.changed()
@@ -152,12 +156,19 @@ def parse_inputs(d: dict) -> tuple[Composition, dict]:
     return Composition(wt, name=d.get("name", "")), kw
 
 
-def _formula(name: str, x: dict) -> str:
+def _numbers(name: str, x: dict) -> dict:
+    """Composition numbers for the plots: olivine Fo, plagioclase An, pyroxene Wo and Mg#."""
     if name == "olivine":
-        return f"Fo{100 * x.get('forsterite', 0):.0f}"
+        return {"Fo": 100 * x.get("forsterite", 0)}
     if name == "feldspar":
-        return f"An{100 * x.get('anorthite', 0):.0f} Ab{100 * x.get('albite', 0):.0f} Or{100 * x.get('sanidine', 0):.0f}"
-    return ""
+        return {"An": 100 * x.get("anorthite", 0)}
+    if name == "clinopyroxene":
+        from ..thermo.pyroxene import r_from_x
+        r = r_from_x([x[e] for e in PHASES["clinopyroxene"].end_members])
+        ca, fe = 1 - r[4] - r[5], r[0]
+        mg = 1 - r[0] - r[3] - 0.5 * (r[1] + r[2] + r[4]) + r[5]
+        return {"Wo": 100 * ca / (ca + mg + fe), "Mg#": 100 * mg / (mg + fe)}
+    return {}
 
 
 def step_json(r) -> dict:
@@ -167,7 +178,8 @@ def step_json(r) -> dict:
         "liquid": {ox: liq.get(ox) for ox in OXIDES if liq.get(ox) > 0},
         "mg_number": liq.mg_number,
         "solids": [{"name": s.name, "label": PHASE_LABEL.get(s.name, s.name), "grams": s.grams,
-                    "x": s.x, "formula": _formula(s.name, s.x)} for s in r.solids],
+                    "x": s.x, "numbers": _numbers(s.name, s.x),
+                    "formula": PHASES[s.name].formula(np.array(list(s.x.values())))} for s in r.solids],
         "affinities": r.affinities,
     }
 

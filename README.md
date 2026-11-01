@@ -19,6 +19,10 @@ Milestones 1 and 2 are under way.  Working now, for anhydrous to slightly hydrou
   complete except for the standard state of H2O (fine while water stays in the melt).
 - `magma.thermo.minerals`, `magma.thermo.phases`: olivine (Sack and Ghiorso 1989, Hirschmann
   1991) and ternary feldspar (Elkins and Grove 1990) on MELTS end-member data.
+- `magma.thermo.pyroxene`: clinopyroxene, the seven-end-member model of Sack and Ghiorso (1994c)
+  with Fe-Mg and Fe3+-Al ordering, our own code for the model's equations (its Taylor coefficients
+  are in `data/melts_cpx_taylor.tsv`, evaluated from ThermoEngine's parameters with Douglas's
+  approval on 2026-11-01); checked term by term against the definitions in ThermoEngine.
 - `magma.equilibrium`: liquid + solids at one T, P and fO2 (or closed to oxygen), adding and
   dropping phases by their affinities, as MELTS does.
 - `magma.path`: equilibrium or fractional crystallization along a cooling path.
@@ -42,13 +46,14 @@ Checks against MELTS (ThermoEngine's MELTS v1.0.2 MORB example, 1220 C, 100 MPa)
 | Forsterite affinity of the example liquid | 3495 J | 3491 J |
 | Plagioclase on that liquid | present, An81 | 146 J short of saturation, An82 |
 | Olivine on that liquid | 119 J undersaturated | 277 J undersaturated |
+| Augite on that liquid | 1334 J undersaturated | 1394 J undersaturated |
 | Equilibrium of the bulk composition | plagioclase 1.47 g An81 (+ 0.02 g spinel) | plagioclase 0.45 g An82 |
 
-ALL MORB at 1 bar and QFM: plagioclase appears between 1190 and 1200 C, then olivine (Fo~82,
-olivine-melt Kd 0.32).  Clinopyroxene is still missing, so results below about 1170 C are not
-yet realistic for MORB.
+ALL MORB at 1 bar and QFM: plagioclase appears between 1190 and 1200 C, then olivine (Fo~83,
+olivine-melt Kd 0.32) and augite (Wo~40, Mg# 85) together near 1180 C; by 1150 C the system is
+56% melt.  Orthopyroxene, spinel and the Fe-Ti oxides are still missing.
 
-Next: clinopyroxene and orthopyroxene, spinel, then partial melting of a rock and the app.
+Next: orthopyroxene and pigeonite, spinel, the Fe-Ti oxides, then partial melting of a rock.
 
 ## The app
 

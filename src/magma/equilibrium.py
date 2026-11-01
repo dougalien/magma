@@ -66,7 +66,7 @@ class EquilibriumResult:
 class Equilibrator:
     """Equilibrium of one bulk composition (oxide wt%, i.e. grams per 100 g) at T, P, fO2."""
 
-    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar")):
+    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar", "clinopyroxene")):
         """fo2: a buffer ("QFM+1"), a log10 value, or None for a system closed to oxygen."""
         b = bulk.with_fe3_ratio(0.0)                     # carry iron as total FeO
         self.bulk_fe2o3 = bulk.moles().get("Fe2O3", 0.0)  # used when fo2 is None (closed to oxygen)
@@ -77,16 +77,23 @@ class Equilibrator:
 
     # ---- liquid ------------------------------------------------------------------------------
     def _liquid(self, solid_oxides: dict[str, float], t_c, p) -> Composition:
-        mol = dict(self.bulk_moles)
+        mol = dict(self.bulk_moles)                 # iron carried as total FeO
+        solid_fe2o3 = solid_oxides.get("Fe2O3", 0.0)
         for o, n in solid_oxides.items():
-            mol[o] = mol.get(o, 0.0) - n
+            if o == "Fe2O3":
+                mol["FeO"] = mol.get("FeO", 0.0) - 2 * n
+            else:
+                mol[o] = mol.get(o, 0.0) - n
         wt = {o: n * MOLAR_MASS[o] for o, n in mol.items()}
         if min(wt.values()) < -1e-9:
             raise ValueError("solids exceed the bulk composition")
         liq = Composition({o: max(v, 0.0) for o, v in wt.items()})
-        if self.fo2 is None:      # closed to oxygen: all ferric iron stays in the liquid
+        if self.fo2 is None:      # closed to oxygen: the ferric iron not in solids stays in the liquid
             fe_tot = mol.get("FeO", 0.0)
-            return liq.with_fe3_ratio(min(2 * self.bulk_fe2o3 / fe_tot, 1.0) if fe_tot > 0 else 0.0)
+            fe3 = 2 * (self.bulk_fe2o3 - solid_fe2o3)
+            if fe3 < -1e-12:
+                raise ValueError("solids hold more ferric iron than the system")
+            return liq.with_fe3_ratio(min(max(fe3, 0.0) / fe_tot, 1.0) if fe_tot > 0 else 0.0)
         return liq.with_fe3_ratio(fe3_ratio(liq, t_c, p, self.fo2))
 
     def _mu_liquid(self, liq: Composition, t_k, p) -> np.ndarray:
@@ -99,7 +106,11 @@ class Equilibrator:
         layout = [(ph, e) for ph in present for e in ph.end_members]
 
         def unpack(y):
-            n = np.exp(y)
+            parts, i = [], 0
+            for ph in present:
+                parts.append(ph.n_from_params(y[i:i + ph.n_params]))
+                i += ph.n_params
+            n = np.concatenate(parts)
             solid_ox: dict[str, float] = {}
             for (ph, e), ni in zip(layout, n):
                 for o, k in _oxide_vector(e).items():
@@ -110,8 +121,11 @@ class Equilibrator:
             n, solid_ox = unpack(y)
             try:
                 liq = self._liquid(solid_ox, t_c, p)
+                for ph, ni in self._split(present, n):
+                    if hasattr(ph, "feasible_x") and not ph.feasible_x(ni / ni.sum()):
+                        raise ValueError("infeasible solid composition")
             except ValueError:
-                return np.full(len(y), 1e6)
+                return np.full(len(n), 1e3)
             mu_l = self._mu_liquid(liq, t, p)
             res, i = [], 0
             for ph in present:
@@ -126,6 +140,14 @@ class Equilibrator:
         sol = least_squares(residual, guess, method="lm", xtol=1e-12, ftol=1e-12, max_nfev=4000)
         n, solid_ox = unpack(sol.x)
         return sol, n, layout, solid_ox
+
+    @staticmethod
+    def _split(present, n):
+        i = 0
+        for ph in present:
+            m = len(ph.end_members)
+            yield ph, n[i:i + m]
+            i += m
 
     def equilibrate(self, t_c: float, p_bar: float = 1.0, max_iter: int = 20) -> EquilibriumResult:
         t = t_c + 273.15
@@ -144,17 +166,18 @@ class Equilibrator:
             ph = next(p for p in absent if p.name == best[0])
             x = best[1][1]
             present.append(ph)
-            guess = np.concatenate([guess, np.log(np.maximum(x * 1e-3, 1e-12))])
+            guess = np.concatenate([guess, ph.params_from(x, 1e-3)])
             sol, n, layout, solid_ox = self._solve(present, t_c, p_bar, guess)
             guess = sol.x
             # drop phases that have essentially vanished
-            keep, i, g2 = [], 0, []
+            keep, i, j, g2 = [], 0, 0, []
             for p_ in present:
                 m = len(p_.end_members)
                 if n[i:i + m].sum() > 1e-10:
                     keep.append(p_)
-                    g2.extend(guess[i:i + m])
+                    g2.extend(guess[j:j + p_.n_params])
                 i += m
+                j += p_.n_params
             if len(keep) != len(present):
                 present, guess = keep, np.array(g2)
                 if present:
