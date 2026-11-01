@@ -1,0 +1,19 @@
+# Mineral end members in the MELTS convention (Berman 1988 form): H (J), S (J/K) at 298.15 K, 1 bar;
+# Cp = k0 + k1 T^-0.5 + k2 T^-2 + k3 T^-3; V = v0 [1 + v1 (P-1) + v2 (P-1)^2 + v3 (T-Tr) + v4 (T-Tr)^2].
+# Values as used in ThermoEngine v2 (gitlab.com/ENKI-portal/ThermoEngine, src/*Berman.m, AGPL-3),
+# taken with Douglas's approval on 2026-11-01; they follow Berman (1988) except where noted.
+# special: albite_salje = Salje (1985) Landau ordering term; disorder = Berman (1988) disorder
+# function d0..d4 up to 1436 K with d5 its volume scaling (see minerals.py).
+name	formula	H	S	k0	k1	k2	k3	v0	v1	v2	v3	v4	special	note
+forsterite	Mg2SiO4	-2174420.0	94.010	238.64	-2001.3	0.0	-116240000.0	4.366	-0.791e-6	1.351e-12	29.464e-6	88.633e-10		OlivineBerman.m
+fayalite	Fe2SiO4	-1479360.0	150.930	248.93	-1923.9	0.0	-139100000.0	4.630	-0.730e-6	0.0	26.546e-6	79.482e-10		OlivineBerman.m
+albite	NaAlSi3O8	-3921618.0	224.412	393.64	-2415.5	-7892800.0	1070640000.0	10.083	-1.945e-6	4.861e-12	26.307e-6	32.407e-10	albite_salje	BermanAlbite.m
+anorthite	CaAl2Si2O8	-4213249.2	207.2223	439.37	-3734.1	0.0	-317020000.0	10.075	-1.272e-6	3.176e-12	10.918e-6	41.985e-10		FeldsparBerman.m: Berman H + 3.7 kcal, S + 3.7 kcal/2200 K (metastable C-1, Carpenter 1988; GS1995 appendix)
+sanidine	KAlSi3O8	-3967391.0	214.145	381.37	-1941.0	-12037300.0	1836430000.0	10.869	-1.805e-6	5.112e-12	15.145e-6	54.850e-10	disorder	BermanStoichiometricPhases.m: Berman H + 3400 J (rhyolite-MELTS sanidine adjustment, Gualda et al. 2012); disorder d0=282.98 d1=-4830 d2=3621000 d3=-0.15733 d4=34.770e-6 d5=410630
+diopside	CaMgSi2O6	-3200583.0	142.5	305.41	-1604.9	-7166000.0	921840000.0	6.620	-0.872e-6	1.707e-12	27.795e-6	83.082e-10		CpxBerman.m (Berman 1988)
+clinoenstatite	Mg2Si2O6	-3086083.0	135.164	333.16	-2401.2	-4541200.0	558300000.0	6.3279	-0.749e-6	0.447e-12	24.656e-6	74.670e-10		CpxBerman.m (Sack & Ghiorso 1994c)
+hedenbergite	CaFeSi2O6	-2842221.0	174.2	307.89	-1597.3	-6992500.0	935220000.0	6.7894	-0.9925e-6	1.4835e-12	31.371e-6	83.672e-10		CpxBerman.m (Sack & Ghiorso 1994c)
+alumino-buffonite	CaTi0.5Mg0.5AlSiO6	-3283830.18	143.745	297.499	-1355.96	-6702190.0	759082000.0	6.356	-0.870e-6	2.171e-12	22.250e-6	52.863e-10		CpxBerman.m: H = -3275265 + H31 (-8565.18)
+buffonite	CaTi0.5Mg0.5FeSiO6	-2828776.95	180.741	303.909	-1417.67	-4356540.0	352523000.0	6.7217	-0.870e-6	2.171e-12	22.250e-6	52.863e-10		CpxBerman.m: H = -2836709 + 7932.05, S = 161.985 + 18.756
+essenite	CaFeAlSiO6	-2867478.01	177.747	317.11	-1733.3	-5109650.0	542220000.0	6.7217	-0.870e-6	2.171e-12	22.250e-6	52.863e-10		CpxBerman.m: H = -2860211 - 7267.01, S = 158.991 + 18.756
+jadeite	NaAlSi2O6	-3025118.0	133.574	311.29	-2005.1	-5350300.0	662570000.0	6.034	-0.860e-6	2.149e-12	23.118e-6	25.785e-10		CpxBerman.m (Berman 1988)

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magma: results | Dougalien Systems</title>
+<meta name="author" content="Dougalien Systems">
+<link rel="icon" type="image/svg+xml" href="/static/dougalien_mark.svg">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="bar">
+  <img class="mark" src="/static/dougalien_mark.svg" alt="" width="26" height="26">
+  <h1>Magma</h1>
+  <a class="brand small" href="https://dougalien.com" target="_blank" rel="noopener" title="Visit dougalien.com (opens in your browser)">by Dougalien Systems</a>
+  <span class="muted small">results</span>
+  <span class="spacer"></span>
+  <span id="pill-link" class="pill">connecting</span>
+  <span id="pill-run" class="pill" style="display:none"></span>
+</div>
+<main class="results">
+  <div id="empty" class="empty panel">
+    <h2>No results yet</h2>
+    <p>Set up a melt in the control window and press Run. The results appear here as each temperature step finishes.</p>
+  </div>
+  <div id="content" style="display:none;gap:14px;flex-direction:column">
+    <section class="panel">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h2 id="title"></h2>
+          <div id="meta" class="small muted"></div>
+        </div>
+        <div class="row">
+          <button id="dl-csv" title="Every step as a table">Download CSV</button>
+          <button id="dl-svg" title="The plot as a vector image">Download plot</button>
+        </div>
+      </div>
+      <h3 style="margin:12px 0 6px">Here is what we found</h3>
+      <div id="story" class="story"></div>
+      <details style="margin-top:8px"><summary>Assumptions and limits</summary><ul id="notes"></ul></details>
+    </section>
+    <section class="panel">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <div class="seg" id="view" role="group" aria-label="What to plot">
+          <button data-view="mass" class="on">Crystals and melt</button><button data-view="liquid">Melt composition</button><button data-view="minerals">Mineral compositions</button>
+        </div>
+        <span id="axisnote" class="hint"></span>
+      </div>
+      <div id="legend" class="legend"></div>
+      <div id="plot" class="plotwrap"></div>
+    </section>
+    <section class="panel">
+      <h2 style="margin-bottom:8px">Step by step</h2>
+      <div class="tablewrap"><table class="steps" id="table"></table></div>
+    </section>
+  </div>
+</main>
+<script src="/static/common.js"></script>
+<script src="/static/plot.js"></script>
+<script src="/static/results.js"></script>
+</body>
+</html>

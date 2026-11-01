@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magma | Dougalien Systems</title>
+<meta name="author" content="Dougalien Systems">
+<link rel="icon" type="image/svg+xml" href="/static/dougalien_mark.svg">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<div class="bar">
+  <img class="mark" src="/static/dougalien_mark.svg" alt="" width="26" height="26">
+  <h1>Magma</h1>
+  <a class="brand small" href="https://dougalien.com" target="_blank" rel="noopener" title="Visit dougalien.com (opens in your browser)">by Dougalien Systems</a>
+  <span class="muted small">cooling a silicate melt</span>
+  <span class="spacer"></span>
+  <button id="open-results" title="The window with the plots and tables">Open results window</button>
+  <span id="pill-link" class="pill">connecting</span>
+</div>
+<main class="mcontrol">
+  <section class="panel" id="card">
+    <div class="cardgrid">
+      <fieldset class="group">
+        <legend>Starting melt</legend>
+        <label class="f">Composition<select id="preset"></select></label>
+        <div id="preset-source" class="hint" style="margin:4px 0 10px"></div>
+        <div class="oxgrid" id="oxides"></div>
+        <div class="row sumline small"><span>Total <b id="total">0</b> wt%</span><span class="hint">Values are normalized to 100. Give iron as FeO and Fe2O3, or all as FeO.</span></div>
+      </fieldset>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <fieldset class="group">
+          <legend>Conditions</legend>
+          <div class="grid3">
+            <label class="f">Start, C<input id="t_start" type="number" value="1250"></label>
+            <label class="f">End, C<input id="t_end" type="number" value="1150"></label>
+            <label class="f">Step, C<input id="step" type="number" value="5" min="0.5"></label>
+          </div>
+          <div class="grid2" style="margin-top:8px">
+            <label class="f">Pressure, bar<input id="p_bar" type="number" value="1" min="1"></label>
+            <label class="f">Oxygen<select id="buffer">
+              <option value="QFM">QFM buffer</option><option value="NNO">NNO buffer</option>
+              <option value="IW">IW buffer</option><option value="MH">MH buffer</option>
+              <option value="closed">Closed to oxygen</option></select></label>
+          </div>
+          <label class="f" id="offset-wrap" style="margin-top:8px;width:160px">Offset from buffer, log units<input id="offset" type="number" value="0" step="0.5"></label>
+        </fieldset>
+        <fieldset class="group">
+          <legend>Process</legend>
+          <div class="seg" id="mode" role="group" aria-label="Mode">
+            <button data-mode="equilibrium" class="on">Equilibrium</button><button data-mode="fractional">Fractional</button>
+          </div>
+          <div class="hint" id="mode-hint" style="margin-top:6px"></div>
+          <h3 style="margin:12px 0 6px">Minerals allowed</h3>
+          <div class="row" id="phases"></div>
+          <div class="hint" style="margin-top:6px">Clinopyroxene, orthopyroxene, spinel and Fe-Ti oxides are coming next.</div>
+        </fieldset>
+      </div>
+    </div>
+    <div class="runbar">
+      <div id="err" class="errbox" style="display:none;margin:10px 0 0"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="run" class="primary">Run</button>
+        <button id="stop" style="display:none">Stop</button>
+        <span id="status" class="small muted"></span>
+        <span class="spacer" style="flex:1"></span>
+      </div>
+      <progress id="prog" value="0" max="1" style="margin-top:8px;display:none"></progress>
+    </div>
+  </section>
+</main>
+<script src="/static/common.js"></script>
+<script src="/static/control.js"></script>
+</body>
+</html>

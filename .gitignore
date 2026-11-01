@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+*.egg-info/
+build/
+dist/
+# third-party databases and reference codes are never committed; point importers at a local copy
+data/external/
+workspace/

@@ -1,0 +1,38 @@
+# Builds Magma.exe on Windows and publishes it as the "Latest Windows build" release.
+name: Windows exe
+
+on:
+  push:
+    branches: [main]
+    paths: ["src/**", "packaging/**", ".github/workflows/windows-exe.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tests
+        run: |
+          python -m pip install numpy scipy pytest
+          python -m pytest -q
+      - name: Build
+        run: powershell -File packaging\build_exe.ps1
+      - name: Check that it starts
+        run: dist\Magma.exe --help
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Magma-exe
+          path: dist/Magma.exe
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete windows-latest --yes --cleanup-tag 2>$null
+          gh release create windows-latest dist/Magma.exe --target ${{ github.sha }} --title "Latest Windows build" --notes "Magma.exe built from ${{ github.sha }}. Double-click to start; the control window opens in your browser."
