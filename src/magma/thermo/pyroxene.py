@@ -286,6 +286,11 @@ _AUGITE = [np.array(v, float) for v in (
     [0.20, 0.60, 0.12, 0.02, 0.01, 0.03, 0.02],     # pigeonite-like
     [0.75, 0.05, 0.05, 0.05, 0.02, 0.05, 0.03],     # diopside
 )]
+_PIGEONITE = [np.array(v, float) for v in (
+    [0.06, 0.74, 0.14, 0.02, 0.0, 0.03, 0.01],      # Mg-pigeonite
+    [0.10, 0.55, 0.30, 0.02, 0.0, 0.02, 0.01],      # Fe-pigeonite
+    [-0.25, 0.85, 0.37, 0.02, 0.0, 0.0, 0.01],      # Fe-rich, Ca-poor
+)]
 _OPX = [np.array(v, float) for v in (
     [0.06, 0.74, 0.14, 0.02, 0.0, 0.03, 0.01],      # bronzite
     [0.10, 0.55, 0.30, 0.02, 0.0, 0.02, 0.01],      # hypersthene
@@ -299,8 +304,10 @@ class Pyroxene:
     end_members = END_MEMBERS
     n_params = 7               # log N and r
 
-    def __init__(self, name: str, tay: Taylor, starts):
-        self.name, self.tay, self.starts = name, tay, starts
+    def __init__(self, name: str, tay: Taylor, starts, ca_range=None):
+        """ca_range: (lo, hi) Ca per six oxygens that the saturation search may look in, so that
+        two instances of one model (augite and pigeonite, as in MELTS) find their own minima."""
+        self.name, self.tay, self.starts, self.ca_range = name, tay, starts, ca_range
 
     def g0(self, t, p) -> np.ndarray:
         return np.array([MINERALS[e].gibbs(t, p) for e in END_MEMBERS])
@@ -352,6 +359,9 @@ class Pyroxene:
             return float(x_from_r(z[:6]) @ d) + g, dg + dz
 
         cons = [{"type": "ineq", "fun": _site_margins}]
+        if self.ca_range is not None:            # Ca = 1 - r4 - r5
+            lo, hi = self.ca_range
+            cons.append({"type": "ineq", "fun": lambda z: np.array([1 - z[4] - z[5] - lo, hi - (1 - z[4] - z[5])])})
         best = None
         for x0 in self.starts:
             r0 = r_from_x(x0)
@@ -376,5 +386,7 @@ class Pyroxene:
         return f"Wo{100 * ca / tot:.0f} En{100 * mg / tot:.0f} Fs{100 * fe / tot:.0f}"
 
 
-CLINOPYROXENE = Pyroxene("clinopyroxene", CPX, _AUGITE)
+CA_SPLIT = 0.30          # Ca per formula between pigeonite (below) and augite (above)
+CLINOPYROXENE = Pyroxene("clinopyroxene", CPX, _AUGITE[:1] + _AUGITE[2:], ca_range=(CA_SPLIT, 1.0))
+PIGEONITE = Pyroxene("pigeonite", CPX, _PIGEONITE, ca_range=(0.0, CA_SPLIT))
 ORTHOPYROXENE = Pyroxene("orthopyroxene", OPX, _OPX)

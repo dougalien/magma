@@ -21,9 +21,12 @@ The paper prints the last coefficient as 463.8; that gives Cp = 102 J/K at 298 K
 1480 K (above the liquid), while 1463.8 gives 44.2 J/K at 298 K, matching measured silica glass
 (44.4 J/K).  We take 1463.8, which is also the value in ThermoEngine (LiquidMeltsSiO2.m).
 
-H2O: its standard state (Nicholls 1980 with the Haar water equation of state) is not done yet.
-While water stays in the liquid (no fluid phase, no hydrous minerals) its standard state cancels out
-of every phase equilibrium, so gibbs("H2O") returns 0 and `h2o_standard_state_done` is False.
+H2O: the standard state MELTS v1.0.2 uses (ThermoEngine LiquidMeltsH2O.m, numbers taken with
+Douglas's approval): G = RT (a/T + b + phi(T, P)) + G_water(T, 1 bar) - G_Robie(T), with a = -33676,
+b = 18.3527, phi a quartic in P (the dissolved-water volume) and G_Robie a fit in T.  Magma measures
+every water Gibbs energy from pure water at the same T and 1 bar, so liquid_gibbs("H2O") returns
+RT (a/T + b + phi) - G_Robie, and the water fluid (thermo/water_fluid.py) returns
+G_water(T, P) - G_water(T, 1 bar) from IAPWS-95.
 """
 
 from __future__ import annotations
@@ -35,7 +38,7 @@ from importlib import resources
 
 
 TR, PR, T_VOL = 298.15, 1.0, 1673.15
-h2o_standard_state_done = False
+h2o_standard_state_done = True
 
 
 @dataclass(frozen=True)
@@ -128,9 +131,20 @@ def liquid_gibbs(component: str, t_k: float, p_bar: float) -> float:
     if component == "SiO2":
         return _sio2_gibbs(t_k, p_bar)
     if component == "H2O":
-        return 0.0
+        return h2o_liquid_gibbs(t_k, p_bar)
     e = END_MEMBERS[component]
     h_s, s_s = e.solid_h_s(e.t_fusion)
     h = h_s + e.t_fusion * e.ds_fusion + e.cp * (t_k - e.t_fusion)
     s = s_s + e.ds_fusion + e.cp * math.log(t_k / e.t_fusion)
     return h - t_k * s + _volume_term(e.v, e.dvdt, e.dvdp, e.d2vdpdt, e.d2vdp2, t_k, p_bar)
+
+
+def h2o_liquid_gibbs(t: float, p: float) -> float:
+    """Dissolved-H2O standard state relative to pure water at T and 1 bar, J/mol (see module notes)."""
+    r, a, b = 8.3143, -33676.0, 18.3527
+    phi = ((0.110 / t + 4.432e-5 + 1.405e-7 * t - 2.394e-11 * t * t) * p
+           + (7.337e-8 / t - 1.170e-8 - 9.502e-13 * t) * p * p
+           + (1.876e-10 / t + 4.586e-13) * p ** 3 - 1.191e-14 * p ** 4 / t)
+    g_robie = r * t * (2.9147 * math.log(t) - 9.6863e-4 * t + 6.8593e-8 * t * t + 77.8899 / math.sqrt(t)
+                       - 28954.8 / t - 2263.27 / (t * t) - 15.8997)
+    return r * t * (a / t + b + phi) - g_robie

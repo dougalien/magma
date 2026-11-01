@@ -30,6 +30,14 @@ Milestones 1 and 2 are under way.  Working now, for anhydrous to slightly hydrou
 - `magma.thermo.rhombohedral`: the ilmenite-hematite solution of Ghiorso and Evans (2008) as in
   MELTS (geikielite, hematite, ilmenite, corundum; pyrophanite is left out because the liquid has no
   MnO), with Fe, Mg-Ti ordering between the layers; its G matches ThermoEngine's definition exactly.
+- Pigeonite: a second copy of the clinopyroxene model (as MELTS has Augite and Pigeonite), searched
+  below 0.30 Ca per formula; left out above 15 kbar.  MORB at 1 bar now grows augite (Wo37) and
+  pigeonite (Wo14) together from 1150 C, with pigeonite replacing olivine.
+- Garnet: almandine-grossular-pyrope, Berman (1990) as in MELTS GarnetBerman.m.  KLB-1 at 3 GPa is a
+  garnet lherzolite (garnet Py71 Alm12 Grs17) that begins to melt near 1500 C.
+- Water: the dissolved-H2O standard state of MELTS v1.0.2 (LiquidMeltsH2O.m) and a pure-water fluid
+  from IAPWS-95 (`thermo/water.py`, copied from Douglas's Reaction app).  MORB at 1200 C holds about
+  3 wt% H2O at 1 kbar; with 2.5 wt% H2O it saturates near 1040 C, and plagioclase waits until 1020 C.
 - `magma.equilibrium`: liquid + solids at one T, P and fO2 (or closed to oxygen), adding and
   dropping phases by their affinities, as MELTS does.
 - `magma.path`: equilibrium or fractional crystallization along a cooling path.
@@ -80,7 +88,7 @@ by 1450 C).  The lowest-degree melts are far too rich in Na2O (9-11 wt%), the sa
 (the reason pMELTS exists).  Garnet is not in the model, so keep peridotite below about 2 GPa.
 The KLB-1 composition was entered from memory and should be checked against Davis et al. (2009).
 
-Next: a second pyroxene (pigeonite), garnet, and the H2O standard state.
+Next: hydrous minerals (amphibole, biotite), quartz and the other silica phases, and speed.
 
 ## The app
 

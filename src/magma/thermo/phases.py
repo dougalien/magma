@@ -44,6 +44,10 @@ OXIDES_OF = {
     "hematite": {"Fe2O3": 1},
     "ilmenite": {"FeO": 1, "TiO2": 1},
     "corundum": {"Al2O3": 1},
+    "almandine": {"FeO": 3, "Al2O3": 1, "SiO2": 3},
+    "grossular": {"CaO": 3, "Al2O3": 1, "SiO2": 3},
+    "pyrope": {"MgO": 3, "Al2O3": 1, "SiO2": 3},
+    "water": {"H2O": 1},
 }
 
 
@@ -79,6 +83,21 @@ def g_ex_olivine(x, t, p):
 EG = dict(whabor=18810.0, wsabor=10.3, wvabor=0.4602, whorab=27320.0, wsorab=10.3, wvorab=0.3264,
           whaban=7924.0, whanab=0.0, whoran=40317.0, whanor=38974.0, wvanor=-0.1037,
           whabanor=12545.0, wvabanor=-1.095)
+
+
+# ---- garnet (Berman 1990; Berman and Koziol 1991, as in MELTS GarnetBerman.m) ----------------
+# asymmetric ternary Margules on the three dodecahedral sites, W = WH - T WS + P WV per formula
+# key ijk: 1 = grossular, 2 = pyrope, 3 = almandine
+W_GT = {"112": (21560.0, 18.79, 0.10), "122": (69200.0, 18.79, 0.10), "113": (20320.0, 5.08, 0.17),
+        "133": (2620.0, 5.08, 0.09), "223": (230.0, 0.0, 0.01), "233": (3720.0, 0.0, 0.06)}
+
+
+def g_ex_garnet(x, t, p):
+    al, gr, py = x
+    w = {k: h - t * s + p * v for k, (h, s, v) in W_GT.items()}
+    return (w["112"] * gr * py * (gr + al / 2) + w["122"] * gr * py * (py + al / 2)
+            + w["113"] * gr * al * (gr + py / 2) + w["133"] * gr * al * (al + py / 2)
+            + w["223"] * py * al * (py + gr / 2) + w["233"] * py * al * (al + gr / 2))
 
 
 def g_ex_feldspar(x, t, p):
@@ -147,6 +166,8 @@ class SolutionPhase:
             return f"Fo{100 * x[0]:.0f}"
         if self.name == "feldspar":
             return f"An{100 * x[1]:.0f} Ab{100 * x[0]:.0f} Or{100 * x[2]:.0f}"
+        if self.name == "garnet":
+            return f"Py{100 * x[2]:.0f} Alm{100 * x[0]:.0f} Grs{100 * x[1]:.0f}"
         return ""
 
     def affinity(self, mu_liq: np.ndarray, t: float, p: float) -> tuple[float, np.ndarray]:
@@ -167,8 +188,10 @@ class SolutionPhase:
 
 OLIVINE = SolutionPhase("olivine", ("forsterite", "fayalite"), g_ex_olivine, sites=2.0)
 FELDSPAR = SolutionPhase("feldspar", ("albite", "anorthite", "sanidine"), g_ex_feldspar)
-from .pyroxene import CLINOPYROXENE, ORTHOPYROXENE      # noqa: E402
+GARNET = SolutionPhase("garnet", ("almandine", "grossular", "pyrope"), g_ex_garnet, sites=3.0)
+from .pyroxene import CLINOPYROXENE, ORTHOPYROXENE, PIGEONITE   # noqa: E402
 from .spinel import SPINEL                               # noqa: E402
 from .rhombohedral import RHOMBOHEDRAL                   # noqa: E402
+from .water_fluid import WATER_FLUID                     # noqa: E402
 
-PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE, ORTHOPYROXENE, SPINEL, RHOMBOHEDRAL)}
+PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE, PIGEONITE, ORTHOPYROXENE, SPINEL, RHOMBOHEDRAL, GARNET, WATER_FLUID)}

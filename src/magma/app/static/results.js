@@ -38,8 +38,9 @@ function series(steps) {
   const add = (name, key, lab, col, dash) => { const y = num(name, key); if (y.some((v) => v !== null)) out.push({ label: lab, color: color(col), dash, y }); };
   add("olivine", "Fo", "Olivine Fo", "var(--s3)");
   add("feldspar", "An", "Plagioclase An", "var(--s2)");
-  add("clinopyroxene", "Mg#", "Clinopyroxene Mg#", "var(--s4)");
-  add("clinopyroxene", "Wo", "Clinopyroxene Wo", "var(--s5)", "5 4");
+  add("clinopyroxene", "Mg#", "Augite Mg#", "var(--s4)");
+  add("clinopyroxene", "Wo", "Augite Wo", "var(--s5)", "5 4");
+  add("pigeonite", "Mg#", "Pigeonite Mg#", "var(--s8)");
   add("orthopyroxene", "Mg#", "Orthopyroxene Mg#", "var(--s7)");
   add("spinel", "Cr#", "Spinel Cr#", "var(--s8)");
   add("spinel", "Usp", "Spinel ulvöspinel", "var(--s1)", "2 3");

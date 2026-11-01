@@ -7,12 +7,14 @@ from .composition import Composition
 from .equilibrium import Equilibrator, EquilibriumResult
 
 
+PIGEONITE_MAX_P = 15000.0   # bar; above this pigeonite is left out (Magma's choice: it is a low-pressure
+                            # phase, and the second cpx would otherwise take the place of augite + opx)
 SOLIDUS_MELT = 0.06     # below this melt fraction a path that loses its assemblage has reached the solidus
 
 
 def crystallize(bulk: Composition, t_start: float, t_end: float, step: float = 5.0,
                 p_bar: float = 1.0, fo2="QFM", mode: str = "equilibrium",
-                phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene", "spinel", "rhombohedral")) -> list[EquilibriumResult]:
+                phases=("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "rhombohedral", "garnet", "water")) -> list[EquilibriumResult]:
     """Cool from t_start to t_end (degC).  mode "fractional" removes the solids after each step
     and continues with the remaining liquid.  Masses are grams per 100 g of the starting melt."""
     return list(iter_crystallize(bulk, t_start, t_end, step, p_bar, fo2, mode, phases))
@@ -20,7 +22,7 @@ def crystallize(bulk: Composition, t_start: float, t_end: float, step: float = 5
 
 def iter_crystallize(bulk: Composition, t_start: float, t_end: float, step: float = 5.0,
                      p_bar: float = 1.0, fo2="QFM", mode: str = "equilibrium",
-                     phases=("olivine", "feldspar", "clinopyroxene", "orthopyroxene", "spinel", "rhombohedral")):
+                     phases=("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "rhombohedral", "garnet", "water")):
     """Same as crystallize, one step at a time (the app shows progress and can stop between steps).
     In equilibrium mode the path ends early near the solidus: once the melt is nearly gone and the
     next step cannot keep the assemblage (Magma has no liquid-free equilibrium yet)."""
@@ -28,6 +30,7 @@ def iter_crystallize(bulk: Composition, t_start: float, t_end: float, step: floa
         raise ValueError("mode must be 'equilibrium' or 'fractional'")
     if step <= 0 or t_end > t_start:
         raise ValueError("cool from a higher to a lower temperature with a positive step")
+    phases = allowed_phases(phases, p_bar)
     current, scale, prev = bulk, 100.0, None
     n = int(round((t_start - t_end) / step))
     for k in range(n + 1):
@@ -44,3 +47,7 @@ def iter_crystallize(bulk: Composition, t_start: float, t_end: float, step: floa
         if mode == "fractional" and r.solids:
             scale = r.liquid_grams
             current = r.liquid
+
+
+def allowed_phases(phases, p_bar):
+    return tuple(ph for ph in phases if not (ph == "pigeonite" and p_bar > PIGEONITE_MAX_P))

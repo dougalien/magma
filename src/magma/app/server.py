@@ -29,21 +29,23 @@ STATIC = Path(__file__).resolve().parent / "static"
 PAGES = {"/": "control.html", "/control": "control.html", "/results": "results.html"}
 DEFAULT_PORT = 8766            # Reaction uses its own port; both apps can run at once
 MAX_BODY = 200_000
-PHASE_LABEL = {"olivine": "Olivine", "feldspar": "Plagioclase", "clinopyroxene": "Clinopyroxene", "orthopyroxene": "Orthopyroxene",
-               "spinel": "Spinel", "rhombohedral": "Ilmenite"}
+PHASE_LABEL = {"olivine": "Olivine", "feldspar": "Plagioclase", "clinopyroxene": "Augite", "pigeonite": "Pigeonite", "orthopyroxene": "Orthopyroxene",
+               "spinel": "Spinel", "rhombohedral": "Ilmenite", "garnet": "Garnet",
+               "water": "Water (fluid)"}
 
 NOTES = [
     "Liquid: Ghiorso and Sack (1995) regular-solution model, with the parameter values used in MELTS.",
-    "Solids so far: olivine (Fe-Mg), feldspar (Na-Ca-K), clinopyroxene and orthopyroxene (the "
-    "seven-end-member MELTS model of Sack and Ghiorso 1994), and spinel (chromite, hercynite, magnetite, "
-    "spinel, ulvospinel; the MELTS model of Sack and Ghiorso 1991), which covers Cr-spinel and "
-    "titanomagnetite, and the ilmenite-hematite solution (ilmenite, geikielite, hematite, corundum; "
-    "the MELTS model of Ghiorso and Evans 2008). Each mineral appears at most once, so two coexisting "
-    "clinopyroxenes (augite and pigeonite) are not found. Equilibrium paths end near the solidus.",
+    "Solids: olivine, plagioclase (Elkins and Grove 1990), augite, pigeonite and orthopyroxene (the "
+    "MELTS pyroxene model of Sack and Ghiorso 1994; augite and pigeonite are two copies of one model, as "
+    "in MELTS, and pigeonite is left out above 15 kbar), spinel (Cr-spinel to titanomagnetite, Sack and "
+    "Ghiorso 1991), ilmenite (Ghiorso and Evans 2008) and garnet (Berman 1990). Equilibrium paths end "
+    "near the solidus.",
     "Iron: Fe3+/Fe2+ of the liquid from Kress and Carmichael (1991) at the chosen oxygen buffer "
     "(Frost 1991), or fixed by the starting Fe2O3 when the system is closed to oxygen.",
     "MnO, NiO, CoO and CO2 are not part of the liquid model and are left out of the calculation.",
-    "Water stays dissolved in the liquid (no fluid phase yet).",
+    "Water: dissolved H2O uses the MELTS v1.0.2 standard state; a pure-water fluid (IAPWS-95) forms when "
+    "the melt is saturated. At 1 bar any water leaves the melt at once; MORB at 1200 C holds about 3 wt% "
+    "H2O at 1 kbar.",
     "Masses are grams per 100 g of starting material. In fractional crystallization the solids of each "
     "step are removed, and the solid masses shown are the totals removed so far.",
     "Melting: batch melting is equilibrium, computed by cooling the rock's composition from above its "
@@ -222,7 +224,7 @@ def _numbers(name: str, x: dict) -> dict:
         return {"Fo": 100 * x.get("forsterite", 0)}
     if name == "feldspar":
         return {"An": 100 * x.get("anorthite", 0)}
-    if name in ("clinopyroxene", "orthopyroxene"):
+    if name in ("clinopyroxene", "pigeonite", "orthopyroxene"):
         from ..thermo.pyroxene import r_from_x
         r = r_from_x([x[e] for e in PHASES[name].end_members])
         ca, fe = 1 - r[4] - r[5], r[0]

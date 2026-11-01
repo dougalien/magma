@@ -17,10 +17,10 @@ from dataclasses import dataclass, field
 
 from .composition import MOLAR_MASS, Composition
 from .equilibrium import EquilibriumResult, Equilibrator
-from .path import SOLIDUS_MELT, iter_crystallize
+from .path import SOLIDUS_MELT, allowed_phases
 from .thermo.phases import OXIDES_OF
 
-DEFAULT_PHASES = ("olivine", "feldspar", "clinopyroxene", "orthopyroxene", "spinel", "rhombohedral")
+DEFAULT_PHASES = ("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "rhombohedral", "garnet", "water")
 T_LIQUIDUS_START = 1900.0       # degC; the cooling run that gives batch melting starts here at most
 
 
@@ -102,6 +102,7 @@ def iter_melt(bulk: Composition, t_start: float, t_end: float, step: float = 10.
         raise ValueError("heat from a lower to a higher temperature with a positive step")
     if not 0.0 <= retained < 0.5:
         raise ValueError("the retained melt fraction must be between 0 and 0.5")
+    phases = allowed_phases(phases, p_bar)
     total = sum(bulk.normalized().wt.values())    # 100 g of rock
     if mode == "batch":
         steps = _batch_descending(bulk, t_start, t_end, step, p_bar, fo2, phases, on_progress)
