@@ -184,7 +184,7 @@ H2O and CO2.  Checks (tests/test_hp_endmembers.py):
 | H2O, G(P) - G(1 bar), 900 C, 3 kbar | 77.15 kJ | 77.02 kJ (IAPWS-95) |
 | quartz alpha-beta | Cp spike at 847 K | 847 K |
 
-Against MAGEMin itself (built and run only as a reference, with Douglas's approval): all 285 end members
+Against MAGEMin itself (built and run only as a reference, with Douglas's approval): all 259 end members
 with an equation of state agree to within 0.001 J at five (T, P) points from 300 C and 1 kbar to 1500 C and
 25 kbar.  A table of 59 of them at three points is kept in tests/data/hp_em_magemin.tsv.
 
