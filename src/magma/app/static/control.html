@@ -21,6 +21,16 @@
   <span id="pill-link" class="pill">connecting</span>
 </div>
 <main class="mcontrol">
+  <section class="panel" id="starters" style="margin-bottom:14px">
+    <h2 style="margin:0 0 4px">Start from a card</h2>
+    <p class="hint" style="margin:0 0 10px">Each card fills in a composition and conditions that show it well. Change anything before you press Run.</p>
+    <h3 style="margin:6px 0">Melts to cool</h3>
+    <div class="cards" id="cards-melt"></div>
+    <h3 style="margin:12px 0 6px">Rocks to melt</h3>
+    <div class="cards" id="cards-rock"></div>
+    <h3 style="margin:12px 0 6px">The whole story</h3>
+    <div class="cards" id="cards-example"></div>
+  </section>
   <section class="panel" id="card">
     <div class="cardgrid">
       <fieldset class="group">
@@ -47,7 +57,7 @@
           <div class="grid2">
             <label class="f">Pressure, bar<input id="ex-p_crust" type="number" value="2000" min="1"></label>
             <label class="f">Water added, wt%<input id="ex-h2o" type="number" value="2" min="0" step="0.5"></label>
-            <label class="f">Cool to, C<input id="ex-t_end" type="number" value="700"></label>
+            <label class="f">Cool to, C<input id="ex-t_end" type="number" value="800"></label>
             <label class="f">Step, C<input id="ex-step" type="number" value="10" min="1"></label>
           </div>
           <label class="f" style="margin-top:8px">Oxygen<select id="ex-fo2">

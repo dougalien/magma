@@ -7,10 +7,10 @@ adds water if asked (the mantle rock is dry; the water stands for a hydrous sour
 subduction zone), and cools it in steps, taking the crystals out of contact with the melt at every
 step.  Masses in stage 2 are grams per 100 g of primary melt.
 
-What limits the felsic end: Magma's minerals are olivine, plagioclase, the pyroxenes, spinel,
-titanomagnetite, ilmenite, garnet and water.  Amphibole, biotite, K-feldspar, muscovite and quartz
-are not in the model yet, so the late part of Bowen's series cannot form, and as in MELTS the
-liquid's sodium is too stable (the melts run high in Na2O).
+What limits the felsic end: the MELTS liquid holds sodium too well (ThermoEngine's MELTS does the
+same), so a melt this poor in potassium builds up Na2O as it evolves; past about 62 wt% SiO2 (near
+800 C with the defaults) its silica falls while Na2O climbs, which is not a real trend.  A crustal
+andesite (the "Arc andesite" card) goes on to rhyolite and the granite minimum.
 """
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ class Source:
 
 
 DEFAULTS = dict(t_source=1380.0, p_source=10000.0, p_crust=2000.0, h2o=2.0, fo2="NNO",
-                t_end=700.0, step=10.0)
+                t_end=800.0, step=10.0)
 
 
 def melt_source(rock: Composition = PRESETS["KLB-1 peridotite"], t_source: float = 1380.0,
@@ -58,7 +58,7 @@ def primary_with_water(primary: Composition, h2o: float) -> Composition:
     return Composition(wt, name="primary melt", source="")
 
 
-def iter_differentiate(primary: Composition, t_start: float, t_end: float = 700.0, step: float = 10.0,
+def iter_differentiate(primary: Composition, t_start: float, t_end: float = 800.0, step: float = 10.0,
                        p_crust: float = 2000.0, h2o: float = 2.0, fo2="NNO", phases=DEFAULT_PHASES):
     """Stage 2: fractional crystallization of the primary melt.  Yields EquilibriumResult."""
     bulk = primary_with_water(primary, h2o)

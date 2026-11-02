@@ -24,9 +24,10 @@ The paper prints the last coefficient as 463.8; that gives Cp = 102 J/K at 298 K
 H2O: the standard state MELTS v1.0.2 uses (ThermoEngine LiquidMeltsH2O.m, numbers taken with
 Douglas's approval): G = RT (a/T + b + phi(T, P)) + G_water(T, 1 bar) - G_Robie(T), with a = -33676,
 b = 18.3527, phi a quartic in P (the dissolved-water volume) and G_Robie a fit in T.  Magma measures
-every water Gibbs energy from pure water at the same T and 1 bar, so liquid_gibbs("H2O") returns
-RT (a/T + b + phi) - G_Robie, and the water fluid (thermo/water_fluid.py) returns
-G_water(T, P) - G_water(T, 1 bar) from IAPWS-95.
+G_water(T, 1 bar) from IAPWS-95 put on the Berman-Brown scale of the minerals (water_fluid.py), so
+liquid_gibbs("H2O") returns RT (a/T + b + phi) - G_Robie + G_water(T, 1 bar), and the water fluid
+returns G_water(T, P) on the same scale.  (Before the hydrous minerals came in, both left out
+G_water(T, 1 bar), which cancels between melt and fluid.)
 """
 
 from __future__ import annotations
@@ -131,7 +132,9 @@ def liquid_gibbs(component: str, t_k: float, p_bar: float) -> float:
     if component == "SiO2":
         return _sio2_gibbs(t_k, p_bar)
     if component == "H2O":
-        return h2o_liquid_gibbs(t_k, p_bar)
+        # on the minerals' scale (so hydrous minerals can saturate); the water fluid uses the same
+        from .water_fluid import water_gibbs_1bar
+        return h2o_liquid_gibbs(t_k, p_bar) + water_gibbs_1bar(float(t_k))
     e = END_MEMBERS[component]
     h_s, s_s = e.solid_h_s(e.t_fusion)
     h = h_s + e.t_fusion * e.ds_fusion + e.cp * (t_k - e.t_fusion)

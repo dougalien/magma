@@ -30,3 +30,12 @@ corundum	Al2O3	-1655700.0	50.820	155.02	-828.4	-3861400.0	409080000.0	2.558	-0.3
 almandine	Fe3Al2Si3O12	-5267216.0	340.007	573.96	-1483.1	-29292000.0	5022080000.0	11.511	-0.558e-6	0.321e-12	18.613e-6	74.539e-10		GarnetBerman.m (Berman 1990)
 grossular	Ca3Al2Si3O12	-6632859.0	255.150	573.43	-2039.4	-18887200.0	2319310000.0	12.538	-0.654e-6	1.635e-12	18.994e-6	79.756e-10		GarnetBerman.m (Berman 1990)
 pyrope	Mg3Al2Si3O12	-6286548.0	266.359	640.72	-4542.1	-4701900.0	0.0	11.316	-0.576e-6	0.442e-12	22.519e-6	37.044e-10		GarnetBerman.m (Berman 1990)
+quartz_alpha	SiO2	-910700.0	41.46	80.01	-240.3	-3546700.0	491570000.0	2.269	-2.434e-06	1.0137e-11	2.3895e-05	0.0	quartz	BermanStoichiometricPhases.m QuartzBerman (alpha; lambda l1 -9.187e-2, l2 24.607e-5, Tt 848 K + 0.0237 K/bar, trl 373 K)
+quartz_beta	SiO2	-908627.0	44.207	80.01	-240.3	-3546700.0	491570000.0	2.37	-1.238e-06	7.087e-13	0.0	0.0		BermanStoichiometricPhases.m QuartzBerman (beta); both phases + QUARTZ_ADJUSTMENT -1291 J
+tridymite	SiO2	-907045.0	45.524	75.37	0.0	-5958100.0	958250000.0	2.737	-7.4e-07	3.735e-12	4.829e-06	0.0		BermanStoichiometricPhases.m TridymiteBerman (beta, above 383 K)
+muscovite	KAl2Si3AlO10(OH)2	-5976740.0	293.157	651.49	-3873.2	-18523200.0	2742470000.0	14.087	-1.717e-06	4.295e-12	3.3527e-05	0.0		BermanStoichiometricPhases.m MuscoviteBerman
+annite	KFe3Si3AlO10(OH)2	-5142800.0	420.0	727.208	-4775.04	-13831900.0	2119060000.0	15.408	-1.6969784e-06	0.0	3.44473262e-05	0.0		BiotiteBerman.m
+phlogopite	KMg3Si3AlO10(OH)2	-6210391.0	334.346	610.37988	-2083.781	-21533008.0	2841040896.0	14.977	-1.6969784e-06	0.0	3.44473262e-05	0.0		BiotiteBerman.m
+pargasite	NaCa2Mg4AlAl2Si6O22(OH)2	-12621554.816	669.44	1267.25	-6654.34	-30378700.0	3913530000.0	27.35	-1.392e-06	3.481e-12	2.4374e-05	9.8338e-09		HornblendeBerman.m
+ferropargasite	NaCa2Fe4AlAl2Si6O22(OH)2	-11224859.38742857	776.1320000000001	1342.61	-8348.62	-24760400.0	3485070000.0	27.989	-1.392e-06	3.481e-12	2.4374e-05	9.8338e-09		HornblendeBerman.m (H = pargasite + 4/7 of the grunerite-cummingtonite H difference)
+magnesiohastingsite	NaCa2Mg4FeAl2Si6O22(OH)2	-12166501.586	685.3392000000001	1273.66	-6716.06	-28033100.0	3506970000.0	27.38	-1.392e-06	3.481e-12	2.4374e-05	9.8338e-09		HornblendeBerman.m (H = pargasite + the buffonite - alumino-buffonite H difference)

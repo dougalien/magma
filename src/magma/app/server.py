@@ -21,7 +21,7 @@ from .. import __version__
 import numpy as np
 
 from ..classify import BOWEN_CONTINUOUS, BOWEN_DISCONTINUOUS, BOWEN_LATE, TAS_FIELDS, TAS_LINES, magma_type, tas_name, tas_point
-from ..composition import OXIDES, PRESETS, Composition
+from ..composition import CARDS, OXIDES, PRESETS, Composition
 from ..differentiation import DEFAULTS as EXAMPLE_DEFAULTS, iter_differentiate, melt_source
 from ..melting import iter_melt
 from ..path import iter_crystallize
@@ -33,6 +33,8 @@ DEFAULT_PORT = 8766            # Reaction uses its own port; both apps can run a
 MAX_BODY = 200_000
 PHASE_LABEL = {"olivine": "Olivine", "feldspar": "Plagioclase", "clinopyroxene": "Augite", "pigeonite": "Pigeonite", "orthopyroxene": "Orthopyroxene",
                "spinel": "Spinel", "titanomagnetite": "Titanomagnetite", "rhombohedral": "Ilmenite", "garnet": "Garnet",
+               "hornblende": "Hornblende", "biotite": "Biotite", "alkali-feldspar": "K-feldspar",
+               "muscovite": "Muscovite", "quartz": "Quartz", "tridymite": "Tridymite",
                "water": "Water (fluid)"}
 
 NOTES = [
@@ -41,10 +43,12 @@ NOTES = [
     "MELTS pyroxene model of Sack and Ghiorso 1994; augite and pigeonite are two copies of one model, as "
     "in MELTS, and pigeonite is left out above 15 kbar), spinel and titanomagnetite (two copies of the "
     "spinel model of Sack and Ghiorso 1991, the second without chromite, as MELTS allows two spinels), "
-    "ilmenite (Ghiorso and Evans 2008) and garnet (Berman 1990). Equilibrium paths end near the solidus.",
-    "Not in the model yet: amphibole, biotite, K-feldspar, muscovite and the silica minerals (quartz, "
-    "tridymite). They are the late part of Bowen's series, so evolved melts (andesite and beyond) are "
-    "only roughly right, and a melt that would grow them goes on without them.",
+    "ilmenite (Ghiorso and Evans 2008), garnet (Berman 1990), and the late minerals as in MELTS v1.0.2 "
+    "(rhyolite-MELTS): hornblende, biotite, K-feldspar (a second copy of the feldspar model, Or above 30%), "
+    "muscovite, quartz and tridymite. MELTS's hornblende and biotite are simple models and seldom "
+    "saturate; treat them as rough. Equilibrium paths end near the solidus.",
+    "Not in the model: apatite, zircon, sphene, cordierite, garnet in granites (it is the mantle garnet), "
+    "and the Na-rich amphiboles.",
     "Magma types: by SiO2 (basalt 45-52, basaltic andesite 52-57, andesite 57-63, dacite 63-69, rhyolite "
     "above 69 wt%), and the TAS name of Le Bas et al. (1986) from SiO2 and Na2O + K2O, volatile-free. "
     "As in MELTS, the liquid holds sodium too well, so evolved melts plot high in alkalis (the trachy- "
@@ -296,6 +300,12 @@ def _numbers(name: str, x: dict) -> dict:
         return {"Fo": 100 * x.get("forsterite", 0)}
     if name == "feldspar":
         return {"An": 100 * x.get("anorthite", 0)}
+    if name == "alkali-feldspar":
+        return {"Or": 100 * x.get("sanidine", 0), "An": 100 * x.get("anorthite", 0)}
+    if name == "biotite":
+        return {"Mg#": 100 * x.get("phlogopite", 0)}
+    if name == "hornblende":
+        return {"Mg#": 100 * (1 - x.get("ferropargasite", 0))}
     if name in ("clinopyroxene", "pigeonite", "orthopyroxene"):
         from ..thermo.pyroxene import r_from_x
         r = r_from_x([x[e] for e in PHASES[name].end_members])
@@ -391,7 +401,7 @@ class Handler(BaseHTTPRequestHandler):
                                "tas": {"fields": TAS_FIELDS, "lines": TAS_LINES},
                                "bowen": {"discontinuous": BOWEN_DISCONTINUOUS, "continuous": BOWEN_CONTINUOUS,
                                          "late": BOWEN_LATE},
-                               "example": EXAMPLE_DEFAULTS})
+                               "example": EXAMPLE_DEFAULTS, "cards": CARDS})
         if path == "/events":
             return self._events()
         return self._error(404, "not found")

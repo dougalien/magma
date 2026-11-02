@@ -40,6 +40,9 @@ function series(steps) {
   const add = (name, key, lab, col, dash) => { const y = num(name, key); if (y.some((v) => v !== null)) out.push({ label: lab, color: color(col), dash, y }); };
   add("olivine", "Fo", "Olivine Fo", "var(--s3)");
   add("feldspar", "An", "Plagioclase An", "var(--s2)");
+  add("alkali-feldspar", "Or", "K-feldspar Or", "var(--s5)");
+  add("hornblende", "Mg#", "Hornblende Mg#", "var(--s3)", "5 4");
+  add("biotite", "Mg#", "Biotite Mg#", "var(--s4)", "5 4");
   add("clinopyroxene", "Mg#", "Augite Mg#", "var(--s4)");
   add("clinopyroxene", "Wo", "Augite Wo", "var(--s5)", "5 4");
   add("pigeonite", "Mg#", "Pigeonite Mg#", "var(--s8)");
@@ -157,6 +160,25 @@ function typeSteps(steps) {
   return steps.filter((s, i) => i === 0 || s.magma_type !== steps[i - 1].magma_type);
 }
 
+/* The step after which the melt's silica falls while its alkalis climb past 10 wt%: the sodium-rich
+   runaway of the MELTS liquid (in ThermoEngine's MELTS too), not a real trend.  -1 if none. */
+function runawayIndex(steps) {
+  let best = -Infinity;
+  for (let i = 0; i < steps.length; i++) {
+    const [si, alk] = steps[i].tas_xy;
+    if (si < best - 1.5 && alk > 10) return i;
+    best = Math.max(best, si);
+  }
+  return -1;
+}
+function runawayNote(steps) {
+  const k = runawayIndex(steps);
+  if (k < 0) return null;
+  const s = steps[k];
+  return `Below about ${s.t.toFixed(0)} °C the melt's silica falls while its Na2O + K2O climbs (${s.tas_xy[1].toFixed(1)} wt% here). ` +
+    "That is the MELTS liquid model holding too much sodium, which ThermoEngine's own MELTS does as well; it is not a real trend, so read the path no further than this.";
+}
+
 function exampleStory(st) {
   const src = st.source, steps = st.steps, i = st.inputs, ex = i.example || {}, out = [];
   if (!src) { out.push(st.status === "running" ? (st.message || "Stage 1: melting the mantle rock...") : "Stage 1 did not finish."); return out; }
@@ -177,9 +199,15 @@ function exampleStory(st) {
   if (ts.length > 1) out.push(`The melt changes from ${ts.map((s, k) => k === 0 ? s.magma_type : `${s.magma_type} at ${s.t.toFixed(0)} °C (${s.liquid_grams.toFixed(0)} g of melt left)`).join(", to ")}.`);
   out.push(`At ${last.t.toFixed(0)} °C, ${last.liquid_grams.toFixed(1)} g of melt is left from 100 g of primary magma: ${last.tas_xy[0].toFixed(1)} wt% SiO2 and ` +
     `${last.tas_xy[1].toFixed(1)} wt% Na2O + K2O, a ${last.magma_type} by silica (TAS: ${last.tas}).`);
+  const rn = runawayNote(steps);
+  if (rn) out.push(rn);
   if (/trachy|phono|tephri|foid/.test(last.tas)) out.push("The TAS name is alkaline because the model's liquid keeps too much sodium (a known failing of MELTS as well); a real melt with this silica would be the subalkaline type named by silica.");
-  if (last.magma_type !== "rhyolite") out.push("Why it stops short of rhyolite: the late minerals of Bowen's series (amphibole, biotite, K-feldspar, muscovite, quartz) are not in Magma's model yet, " +
-    "and amphibole and biotite in particular are what take iron, magnesium and water out of a wet andesite to drive it on to dacite and rhyolite. Adding them (and quartz) is the next step for the model.");
+  const grew = new Set(order.map((o) => o.n));
+  const late = ["hornblende", "biotite", "alkali-feldspar", "muscovite", "quartz"].filter((n) => !grew.has(n));
+  if (late.length) out.push(`Late minerals of Bowen's series that did not form in this run: ${late.map((n) => ({ "alkali-feldspar": "K-feldspar" }[n] || n)).join(", ")}. ` +
+    "Magma has them (as MELTS does), but MELTS's hornblende and biotite are simple models that seldom saturate, and muscovite needs higher pressure (above about 3 kbar).");
+  if (last.magma_type !== "rhyolite") out.push("To follow Bowen's series to the end, run the \"Arc andesite\" or \"Dacite\" card: a crustal andesite, richer in potassium, goes on to rhyolite, " +
+    "then grows quartz, biotite and K-feldspar together at about 720 °C, the granite minimum.");
   return out;
 }
 
@@ -200,6 +228,8 @@ function story(st) {
       ` The melt has ${last.liquid.SiO2.toFixed(1)} wt% SiO2 and Mg# ${last.mg_number.toFixed(0)}.`);
   }
   if (first && !(st.inputs.phases || []).includes("clinopyroxene")) out.push("Clinopyroxene was not allowed in this run.");
+  const rn = runawayNote(steps);
+  if (rn) out.push(rn);
   return out;
 }
 

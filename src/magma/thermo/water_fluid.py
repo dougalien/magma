@@ -17,9 +17,33 @@ from . import water
 
 @lru_cache(maxsize=4096)
 def fluid_gibbs(t_k: float, p_bar: float) -> float:
+    """G of the water fluid on the minerals' scale (water_gibbs_1bar plus the pressure term)."""
     if p_bar <= 1.0:
-        return 0.0
-    return water.gibbs_iapws(t_k, p_bar) - water.gibbs_iapws(t_k, 1.0)
+        return water_gibbs_1bar(t_k)
+    return water.gibbs_iapws(t_k, p_bar) - water.gibbs_iapws(t_k, 1.0) + water_gibbs_1bar(t_k)
+
+
+# Water on the Berman-Brown apparent-energy scale of the minerals (H = enthalpy of formation from
+# the elements at 298.15 K, S = third-law entropy), so that hydrous minerals (micas, amphibole) can be
+# set against the H2O of the melt.  Liquid water at 298.15 K and 1 bar: H = -285830 J, S = 69.95 J/K
+# (Robie and Hemingway 1995, the values of the Berman 1988 database).  IAPWS-95 has its own zero
+# (liquid at the triple point), so the two differ by a + b T.
+H_F_WATER, S_WATER = -285830.0, 69.95
+
+
+@lru_cache(maxsize=1)
+def _iapws_offset() -> tuple[float, float]:
+    t, h = 298.15, 1e-3
+    g = water.gibbs_iapws(t, 1.0)
+    s = -(water.gibbs_iapws(t + h, 1.0) - water.gibbs_iapws(t - h, 1.0)) / (2 * h)
+    return H_F_WATER - (g + t * s), S_WATER - s
+
+
+@lru_cache(maxsize=4096)
+def water_gibbs_1bar(t_k: float) -> float:
+    """G of pure water (steam above 373 K) at T and 1 bar on the minerals' scale, J/mol."""
+    dh, ds = _iapws_offset()
+    return water.gibbs_iapws(t_k, 1.0) + dh - t_k * ds
 
 
 class WaterFluid:

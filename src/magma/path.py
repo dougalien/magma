@@ -14,7 +14,7 @@ SOLIDUS_MELT = 0.06     # below this melt fraction a path that loses its assembl
 
 def crystallize(bulk: Composition, t_start: float, t_end: float, step: float = 5.0,
                 p_bar: float = 1.0, fo2="QFM", mode: str = "equilibrium",
-                phases=("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "titanomagnetite", "rhombohedral", "garnet", "water")) -> list[EquilibriumResult]:
+                phases=("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "titanomagnetite", "rhombohedral", "garnet", "hornblende", "biotite", "alkali-feldspar", "muscovite", "quartz", "tridymite", "water")) -> list[EquilibriumResult]:
     """Cool from t_start to t_end (degC).  mode "fractional" removes the solids after each step
     and continues with the remaining liquid.  Masses are grams per 100 g of the starting melt."""
     return list(iter_crystallize(bulk, t_start, t_end, step, p_bar, fo2, mode, phases))
@@ -22,7 +22,7 @@ def crystallize(bulk: Composition, t_start: float, t_end: float, step: float = 5
 
 def iter_crystallize(bulk: Composition, t_start: float, t_end: float, step: float = 5.0,
                      p_bar: float = 1.0, fo2="QFM", mode: str = "equilibrium",
-                     phases=("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "titanomagnetite", "rhombohedral", "garnet", "water")):
+                     phases=("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "titanomagnetite", "rhombohedral", "garnet", "hornblende", "biotite", "alkali-feldspar", "muscovite", "quartz", "tridymite", "water")):
     """Same as crystallize, one step at a time (the app shows progress and can stop between steps).
     In equilibrium mode the path ends early near the solidus: once the melt is nearly gone and the
     next step cannot keep the assemblage (Magma has no liquid-free equilibrium yet)."""

@@ -123,7 +123,7 @@ class EquilibriumResult:
 class Equilibrator:
     """Equilibrium of one bulk composition (oxide wt%, i.e. grams per 100 g) at T, P, fO2."""
 
-    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "titanomagnetite", "rhombohedral", "garnet", "water")):
+    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "titanomagnetite", "rhombohedral", "garnet", "hornblende", "biotite", "alkali-feldspar", "muscovite", "quartz", "tridymite", "water")):
         """fo2: a buffer ("QFM+1"), a log10 value, or None for a system closed to oxygen."""
         b = bulk.with_fe3_ratio(0.0)                     # carry iron as total FeO
         self.bulk_fe2o3 = bulk.moles().get("Fe2O3", 0.0)  # used when fo2 is None (closed to oxygen)
@@ -335,4 +335,22 @@ class Equilibrator:
         for ph in self.phases:
             if ph not in present:
                 result.affinities[ph.name] = ph.affinity(mu_l, t, p_bar)[0]
+        _name_feldspars(result)
         return result
+
+
+def _name_feldspars(result: EquilibriumResult) -> None:
+    """Plagioclase and K-feldspar are two copies of one model; once present, either may drift across the
+    solvus while the equilibrium is solved.  Name them by what they are: the Or-richer one is K-feldspar
+    if it is above OR_SPLIT, and a lone feldspar by its own Or content."""
+    from .thermo.felsic import OR_SPLIT
+    fs = [s for s in result.solids if s.name in ("feldspar", "alkali-feldspar")]
+    if not fs:
+        return
+    fs.sort(key=lambda s: s.x.get("sanidine", 0.0))
+    if len(fs) == 1:
+        fs[0].name = "alkali-feldspar" if fs[0].x.get("sanidine", 0.0) > OR_SPLIT else "feldspar"
+    else:
+        fs[0].name, fs[1].name = "feldspar", "alkali-feldspar"
+    for s in fs:
+        result.affinities.pop(s.name, None)
