@@ -109,7 +109,8 @@ def _driving_force_min(r: _Reduced, gamma, t, p, starts, rng):
             {"type": "ineq", "fun": lambda q: r.a_used @ q - SF_MIN, "jac": lambda q: r.a_used}]
 
     def f(q):
-        mu = r.mu(q, t, p)
+        with np.errstate(invalid="ignore", divide="ignore"):    # log(0) at a site's edge: handled below
+            mu = r.mu(q, t, p)
         if not np.all(np.isfinite(mu)):
             return 1e6, np.zeros(n)
         d = mu - cg
