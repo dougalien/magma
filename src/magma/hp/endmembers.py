@@ -74,6 +74,8 @@ DATA = _load()
 _AQUEOUS = {"H+", "Cl-", "OH-", "Na+", "K+", "Ca++", "Mg++", "Fe++", "Al+++", "CO3--", "AlOH3", "AlOH4-", "KOH",
             "HCl", "KCl", "NaCl", "CaCl2", "CaCl+", "MgCl2", "MgCl+", "FeCl2", "aqSi", "HS-", "HSO3-", "SO42-",
             "HSO4-"}
+# gases and metals the dataset lists without a usable equation of state here (MAGEMin returns NaN for all but H2)
+_NO_EOS = {"CO", "CH4", "H2", "S2", "H2S", "Cu"}
 
 
 def _cp_terms(cp, t: float) -> float:
@@ -211,6 +213,8 @@ def gibbs(name: str, t: float, p: float, state: str = "equilibrium") -> float:
     """G of an end member, kJ/mol, at T (K) and P (kbar)."""
     if name in _AQUEOUS:
         raise ValueError(f"{name} is an aqueous species (DEW model), not part of this engine")
+    if name in _NO_EOS:
+        raise ValueError(f"{name} has no equation of state in this engine")
     e = DATA[name]
     g = e.h - t * e.s + _cp_terms(e.cp, t)
 

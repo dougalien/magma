@@ -70,3 +70,25 @@ def test_liquid_end_member_is_finite():
 def test_aqueous_species_refused():
     with pytest.raises(ValueError):
         gibbs("Na+", 1000.0, 1.0)
+
+
+def _oracle_rows():
+    from pathlib import Path
+    rows = []
+    for line in (Path(__file__).parent / "data" / "hp_em_magemin.tsv").read_text().splitlines():
+        if line.startswith("#") or line.startswith("name"):
+            continue
+        n, t, p, g = line.split("\t")
+        rows.append((n, float(t), float(p), float(g)))
+    return rows
+
+
+def test_against_magemin():
+    """59 end members at three (T, P) points: G matches MAGEMin to 1 J (print precision is 0.001 J)."""
+    worst = max(abs(gibbs(n, t, p) - g) for n, t, p, g in _oracle_rows())
+    assert worst < 1e-3
+
+
+def test_gases_without_eos_refused():
+    with pytest.raises(ValueError):
+        gibbs("CH4", 1000.0, 1.0)
