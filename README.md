@@ -162,6 +162,58 @@ stays on its Cr-rich side of the solvus.  Without Cr2O3 in the system only one c
 
 Next: speed (each step now takes 5-15 s with sixteen phases), and a better-behaved liquid for sodium.
 
+## A second engine: Holland & Powell
+
+MELTS is weak where Bowen's series ends: its hornblende never forms, and its liquid keeps too much
+sodium below about 800 C.  Magma is gaining a second, self-consistent system for cool, wet magmas:
+the Holland & Powell end-member dataset with the igneous solution models (Holland and Powell 2011;
+Green et al. 2016; Holland, Green and Powell 2018).  Numbers are taken from MAGEMin's distribution
+of the dataset, with Douglas's approval (2026-11-02); the code is our own.  The plan has five steps:
+dataset, solid solutions, pyroxenes and amphibole, liquid and solver, then the app's engine switch.
+
+Step 1 is in: `data/hp_ds636.tsv` (291 end members) and `magma/hp/endmembers.py`, which gives G(T, P)
+from the Holland and Powell (2011) heat capacity, modified Tait equation of state and thermal pressure,
+Landau and Bragg-Williams order-disorder, the liquid end-member form, and Pitzer and Sterner (1994) for
+H2O and CO2.  Checks (tests/test_hp_endmembers.py):
+
+| check | Magma (HP engine) | reference |
+|---|---|---|
+| albite = jadeite + quartz, 600 C | 16.5 kbar | 16.2 kbar (Holland 1980) |
+| quartz = coesite, 1000 C | 30.4 kbar | about 30.5 kbar (Bose and Ganguly 1995) |
+| Al2SiO5 triple point | 538 C, 4.3 kbar | about 550 C, 4.5 kbar (Pattison 1992) |
+| H2O, G(P) - G(1 bar), 900 C, 3 kbar | 77.15 kJ | 77.02 kJ (IAPWS-95) |
+| quartz alpha-beta | Cp spike at 847 K | 847 K |
+
+Against MAGEMin itself (built and run only as a reference, with Douglas's approval): all 259 end members
+with an equation of state agree to within 0.001 J at five (T, P) points from 300 C and 1 kbar to 1500 C and
+25 kbar.  A table of 59 of them at three points is kept in tests/data/hp_em_magemin.tsv.
+
+Steps 2 and 3 are in: `magma/hp/solutions.py`, one framework for the site-fraction models (ideal
+activities as products of site fractions, symmetric and asymmetric van Laar excess terms, DQF end members)
+and thirteen igneous-set solids: olivine, feldspar, spinel, ilmenite, garnet, biotite, white mica,
+orthopyroxene, clinopyroxene, amphibole (11 end members, Green et al. 2016), cordierite, epidote and
+chlorite.  At seventeen MAGEMin equilibria (basalt, wet basalt, KLB-1, granite, andesite and pelite,
+2-20 kbar, 550-1350 C; amphibole at seven of them) every end member's
+chemical potential matches MAGEMin's oxide chemical potentials to 0.0001 kJ (tests/test_hp_solutions.py,
+points in tests/data/hp_magemin_points.json).  The fluid moves to step 4, since it uses the melt's
+formulation.
+
+Step 4 is in: the silicate liquid and aqueous fluid of Holland, Green and Powell (2018), and
+`magma/hp/minimize.py`, a Gibbs energy minimizer of our own (linear programming with column generation,
+then a Newton solve of the exact equilibrium on the assemblage found).  At the seventeen MAGEMin points
+it finds the same assemblage (two feldspars and two amphiboles included) with oxide chemical potentials
+within 0.001 kJ (tests/test_hp_minimize.py).  The system can be open to oxygen at a buffer (an O2
+reservoir at the buffer's fO2), and a path step starts from the step before: if the assemblage holds, a
+step takes about a second instead of 5-30.
+
+Step 5 is in: `magma/hp/engine.py` runs cooling and melting paths and the mantle-to-magma example on this
+engine, and the control window has an engine switch (MELTS or Holland & Powell).  The HP phases are shown
+under the app's mineral names; a feldspar with Or above 30% is K-feldspar, a clinopyroxene with Wo below
+25% is pigeonite, and a spinel that is mostly magnetite and ulvospinel is titanomagnetite.  Phases MELTS
+lacks keep their own names (cordierite, epidote, chlorite, rutile, sphene, the Al2SiO5 minerals,
+corundum, nepheline).  MnO, P2O5, NiO, CoO and CO2 are left out.  The engine also works below the solidus,
+so a cooling path runs until the melt is used up, and batch melting starts from the solid rock.
+
 ## The app
 
 `python -m magma.app` (or `Magma.exe`) starts a small local server and opens two browser windows,

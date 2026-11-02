@@ -1,7 +1,7 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
-let INFO = null, MODE = "equilibrium", PROCESS = "crystallize";
+let INFO = null, MODE = "equilibrium", PROCESS = "crystallize", ENGINE = "hp";
 const HINTS = {
   crystallize: {
     equilibrium: "The crystals stay with the melt and keep reacting with it (a closed system).",
@@ -68,10 +68,10 @@ function inputs() {
     const v = (id) => +$(`ex-${id}`).value;
     return { name, bulk, process: "example", mode: "fractional", phases, t_start: v("t_source"), t_end: v("t_end"),
       step: v("step"), p_bar: v("p_crust"), fo2: $("ex-fo2").value,
-      example: { t_source: v("t_source"), p_source: v("p_source"), h2o: v("h2o"), fo2_source: "QFM" } };
+      engine: ENGINE, example: { t_source: v("t_source"), p_source: v("p_source"), h2o: v("h2o"), fo2_source: "QFM" } };
   }
   return { name, bulk, t_start: +$("t_start").value, t_end: +$("t_end").value, step: +$("step").value,
-    p_bar: +$("p_bar").value, fo2, mode: MODE, process: PROCESS, phases };
+    p_bar: +$("p_bar").value, fo2, mode: MODE, process: PROCESS, engine: ENGINE, phases };
 }
 
 async function run() {
@@ -143,6 +143,10 @@ async function init() {
     hint();
   }));
   document.querySelectorAll("#process button").forEach((b) => b.addEventListener("click", () => setProcess(b.dataset.process)));
+  document.querySelectorAll("#engine button").forEach((b) => b.addEventListener("click", () => {
+    ENGINE = b.dataset.engine;
+    document.querySelectorAll("#engine button").forEach((x) => x.classList.toggle("on", x === b));
+  }));
   hint();
   $("buffer").addEventListener("change", () => { $("offset-wrap").style.display = $("buffer").value === "closed" ? "none" : ""; });
   $("run").addEventListener("click", run);
