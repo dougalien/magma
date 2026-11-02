@@ -69,7 +69,7 @@ function tasSeries(steps) {
     marks.push({ x: pr[0], y: pr[1], text: "primary melt", color: color("var(--s1)") });
   }
   return { x, s: out, opts: { xLabel: "SiO2, wt% (volatile-free)", yLabel: "Na2O + K2O, wt%", xName: "SiO2", xUnit: " wt%",
-    xRange: [40, 80], yRange: [0, 15], labels, marks, sub: (i) => `${steps[i].t.toFixed(0)} °C, ${steps[i].liquid_grams.toFixed(1)} g melt: ${steps[i].tas}` } };
+    xRange: [40, 80], yRange: [0, 16], labels, marks, sub: (i) => `${steps[i].t.toFixed(0)} °C, ${steps[i].liquid_grams.toFixed(1)} g melt: ${steps[i].tas}` } };
 }
 
 /* Bowen's reaction series, with what this run grew and the temperature each mineral appeared at. */
