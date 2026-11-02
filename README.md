@@ -188,10 +188,12 @@ Against MAGEMin itself (built and run only as a reference, with Douglas's approv
 with an equation of state agree to within 0.001 J at five (T, P) points from 300 C and 1 kbar to 1500 C and
 25 kbar.  A table of 59 of them at three points is kept in tests/data/hp_em_magemin.tsv.
 
-Step 2 is in: `magma/hp/solutions.py`, one framework for the site-fraction models (ideal activities as
-products of site fractions, symmetric and asymmetric van Laar excess terms, DQF end members) and seven
-igneous-set solids: olivine, feldspar, spinel, ilmenite, garnet, biotite and white mica.  At nine MAGEMin
-equilibria (basalt, wet basalt, KLB-1, granite and andesite, 2-20 kbar, 650-1350 C) every end member's
+Steps 2 and 3 are in: `magma/hp/solutions.py`, one framework for the site-fraction models (ideal
+activities as products of site fractions, symmetric and asymmetric van Laar excess terms, DQF end members)
+and thirteen igneous-set solids: olivine, feldspar, spinel, ilmenite, garnet, biotite, white mica,
+orthopyroxene, clinopyroxene, amphibole (11 end members, Green et al. 2016), cordierite, epidote and
+chlorite.  At seventeen MAGEMin equilibria (basalt, wet basalt, KLB-1, granite, andesite and pelite,
+2-20 kbar, 550-1350 C; amphibole at seven of them) every end member's
 chemical potential matches MAGEMin's oxide chemical potentials to 0.0001 kJ (tests/test_hp_solutions.py,
 points in tests/data/hp_magemin_points.json).  The fluid moves to step 4, since it uses the melt's
 formulation.

@@ -309,4 +309,183 @@ MUSCOVITE = HPSolution(
     v=(0.63, 0.63, 0.63, 0.37, 0.63, 0.63),
 )
 
-SOLUTIONS = {s.name: s for s in (OLIVINE, FELDSPAR, SPINEL, ILMENITE, GARNET, BIOTITE, MUSCOVITE)}
+
+# ---- orthopyroxene (Holland, Green and Powell 2018) -------------------------------------------------------
+_PX_SITES = ("xMgM1", "xFeM1", "xAlM1", "xFe3M1", "xCrM1", "xTiM1", "xMgM2", "xFeM2", "xCaM2", "xNaM2")
+_TS = {"xSiT": 0.5, "xAlT": 0.5}
+_SI = {"xSiT": 1.0}
+_TS_A = dict(xSiT=0.25, xAlT=0.25)
+ORTHOPYROXENE = HPSolution(
+    "opx",
+    (em("en", (1, "en")), em("fs", (1, "fs")),
+     em("fm", (0.5, "en"), (0.5, "fs"), dqf=(-6.6, 0.0, 0.0)),
+     em("odi", (1, "di"), dqf=(2.8, 0.0, 0.005)),
+     em("mgts", (1, "mgts")),
+     em("cren", (1, "cats"), (1, "en"), (-1, "di"), (-1, "jd"), (1, "kos"), dqf=(-6.0, 0.0, 0.14)),
+     em("obuf", (1, "mgts"), (-0.5, "cor"), (0.5, "per"), (0.5, "ru"), dqf=(-3.91, -0.0051, 0.37)),
+     em("mess", (1, "acm"), (-1, "jd"), (1, "mgts"), dqf=(3.0, 0.0, 0.0)),
+     em("ojd", (1, "jd"), dqf=(18.2, 0.0, 0.0))),
+    _PX_SITES + ("xSiT", "xAlT"),
+    {"en": {"xMgM1": 1, "xMgM2": 1, **_SI}, "fs": {"xFeM1": 1, "xFeM2": 1, **_SI},
+     "fm": {"xMgM1": 1, "xFeM2": 1, **_SI}, "odi": {"xMgM1": 1, "xCaM2": 1, **_SI},
+     "mgts": {"xAlM1": 1, "xMgM2": 1, **_TS}, "cren": {"xCrM1": 1, "xMgM2": 1, **_TS},
+     "obuf": {"xMgM1": 0.5, "xTiM1": 0.5, "xMgM2": 1, **_TS}, "mess": {"xFe3M1": 1, "xMgM2": 1, **_TS},
+     "ojd": {"xAlM1": 1, "xNaM2": 1, **_SI}},
+    {"en": A(xMgM1=1, xSiT=0.5, xMgM2=1), "fs": A(xSiT=0.5, xFeM1=1, xFeM2=1),
+     "fm": A(xMgM1=1, xSiT=0.5, xFeM2=1), "odi": A(xMgM1=1, xSiT=0.5, xCaM2=1),
+     "mgts": A(1.4142, **_TS_A, xAlM1=1, xMgM2=1), "cren": A(1.4142, **_TS_A, xCrM1=1, xMgM2=1),
+     "obuf": A(2.8284, xMgM1=0.5, **_TS_A, xTiM1=0.5, xMgM2=1), "mess": A(1.4142, **_TS_A, xFe3M1=1, xMgM2=1),
+     "ojd": A(xSiT=0.5, xAlM1=1, xNaM2=1)},
+    _pairs(9, [7.0, 3.5, (29.0, 0.0, 0.15), (12.5, 0.0, -0.04), 8.0, 6.0, 8.0, 35.0,
+               4.5, (23.0, 0.0, 0.08), (11.0, 0.0, -0.15), 10.0, 7.0, 10.0, 35.0,
+               (19.0, 0.0, 0.08), (15.0, 0.0, -0.15), 12.0, 8.0, 12.0, 35.0,
+               (75.5, 0.0, -0.84), 20.0, 40.0, 20.0, 35.0,
+               2.0, 10.0, 2.0, 7.0,
+               6.0, 2.0, -11.0,
+               6.0, 20.0,
+               -11.0]),
+    v=(1.0, 1.0, 1.0, 1.2, 1.0, 1.0, 1.0, 1.0, 1.2),
+)
+
+# ---- clinopyroxene (Holland, Green and Powell 2018) -------------------------------------------------------
+CLINOPYROXENE = HPSolution(
+    "cpx",
+    (em("di", (1, "di")),
+     em("cfs", (1, "fs"), dqf=(2.1, -0.002, 0.045)),
+     em("cats", (1, "cats")),
+     em("crdi", (1, "cats"), (-1, "jd"), (1, "kos"), dqf=(4.85, 0.0, 0.0)),
+     em("cess", (1, "acm"), (1, "cats"), (-1, "jd"), dqf=(-3.46, 0.0, 0.0)),
+     em("cbuf", (1, "cats"), (-0.5, "cor"), (0.5, "per"), (0.5, "ru"), dqf=(-20.89, -0.0012, 0.248)),
+     em("jd", (1, "jd")),
+     em("cen", (1, "en"), dqf=(3.5, -0.002, 0.048)),
+     em("cfm", (0.5, "en"), (0.5, "fs"), dqf=(-1.6, -0.002, 0.0465)),
+     em("kjd", (-1, "abh"), (1, "san"), (1, "jd"), dqf=(10.82, 0.0, 0.6))),
+    _PX_SITES + ("xKM2", "xSiT", "xAlT"),
+    {"di": {"xMgM1": 1, "xCaM2": 1, **_SI}, "cfs": {"xFeM1": 1, "xFeM2": 1, **_SI},
+     "cats": {"xAlM1": 1, "xCaM2": 1, **_TS}, "crdi": {"xCrM1": 1, "xCaM2": 1, **_TS},
+     "cess": {"xFe3M1": 1, "xCaM2": 1, **_TS}, "cbuf": {"xMgM1": 0.5, "xTiM1": 0.5, "xCaM2": 1, **_TS},
+     "jd": {"xAlM1": 1, "xNaM2": 1, **_SI}, "cen": {"xMgM1": 1, "xMgM2": 1, **_SI},
+     "cfm": {"xMgM1": 1, "xFeM2": 1, **_SI}, "kjd": {"xAlM1": 1, "xKM2": 1, **_SI}},
+    {"di": A(xMgM1=1, xSiT=0.5, xCaM2=1), "cfs": A(xSiT=0.5, xFeM1=1, xFeM2=1),
+     "cats": A(1.4142, **_TS_A, xAlM1=1, xCaM2=1), "crdi": A(1.4142, **_TS_A, xCrM1=1, xCaM2=1),
+     "cess": A(1.4142, **_TS_A, xFe3M1=1, xCaM2=1),
+     "cbuf": A(2.8284, xMgM1=0.5, **_TS_A, xTiM1=0.5, xCaM2=1),
+     "jd": A(xSiT=0.5, xAlM1=1, xNaM2=1), "cen": A(xMgM1=1, xSiT=0.5, xMgM2=1),
+     "cfm": A(xMgM1=1, xSiT=0.5, xFeM2=1), "kjd": A(xKM2=1, xSiT=0.5, xAlM1=1)},
+    _pairs(10, [(25.8, 0.0, -0.03), (13.0, 0.0, -0.06), 8.0, 8.0, 8.0, 26.0, (29.8, 0.0, -0.03),
+                (20.6, 0.0, -0.03), 26.0,
+                (25.0, 0.0, -0.1), 38.3, 43.3, 24.0, 24.0, 2.3, 3.5, 24.0,
+                2.0, 2.0, 6.0, 6.0, (45.2, 0.0, -0.35), (27.0, 0.0, -0.1), 6.0,
+                2.0, 6.0, 3.0, 52.3, 40.3, 3.0,
+                6.0, 3.0, 57.3, 45.3, 3.0,
+                16.0, 24.0, 22.0, 16.0,
+                40.0, 26.0, 28.0,
+                4.0, 40.0,
+                40.0]),
+    v=(1.2, 1.0, 1.9, 1.9, 1.9, 1.9, 1.2, 1.0, 1.0, 1.2),
+)
+
+# ---- clinoamphibole (Green et al. 2016, as in the igneous set of Holland, Green and Powell 2018) -------
+_AMP_V = {"xvA": 1}
+_T8 = {"xSiT1": 1.0}
+_T62 = {"xSiT1": 0.5, "xAlT1": 0.5}
+_OH = {"xOHV": 1}
+AMPHIBOLE = HPSolution(
+    "amp",
+    (em("tr", (1, "tr")), em("tsm", (1, "ts"), dqf=(10.0, 0.0, 0.0)),
+     em("prgm", (1, "parg"), dqf=(-10.0, 0.0, 0.0)), em("glm", (1, "gl"), dqf=(-3.0, 0.0, 0.0)),
+     em("cumm", (1, "cumm")), em("grnm", (1, "grun"), dqf=(-3.0, 0.0, 0.0)),
+     em("a", (3 / 7, "cumm"), (4 / 7, "grun"), dqf=(-11.2, 0.0, 0.0)),
+     em("b", (2 / 7, "cumm"), (5 / 7, "grun"), dqf=(-13.8, 0.0, 0.0)),
+     em("mrb", (1, "andr"), (1, "gl"), (-1, "gr")),
+     em("kprg", (1, "mu"), (-1, "pa"), (1, "parg"), dqf=(-7.06, 0.02, 0.0)),
+     em("tts", (-2, "dsp"), (2, "ru"), (1, "ts"), dqf=(95.0, 0.0, 0.0))),
+    ("xvA", "xNaA", "xKA", "xMgM13", "xFeM13", "xMgM2", "xFeM2", "xAlM2", "xFe3M2", "xTiM2",
+     "xCaM4", "xMgM4", "xFeM4", "xNaM4", "xSiT1", "xAlT1", "xOHV", "xOV"),
+    {"tr": {**_AMP_V, "xMgM13": 1, "xMgM2": 1, "xCaM4": 1, **_T8, **_OH},
+     "tsm": {**_AMP_V, "xMgM13": 1, "xAlM2": 1, "xCaM4": 1, **_T62, **_OH},
+     "prgm": {"xNaA": 1, "xMgM13": 1, "xMgM2": 0.5, "xAlM2": 0.5, "xCaM4": 1, **_T62, **_OH},
+     "glm": {**_AMP_V, "xMgM13": 1, "xAlM2": 1, "xNaM4": 1, **_T8, **_OH},
+     "cumm": {**_AMP_V, "xMgM13": 1, "xMgM2": 1, "xMgM4": 1, **_T8, **_OH},
+     "grnm": {**_AMP_V, "xFeM13": 1, "xFeM2": 1, "xFeM4": 1, **_T8, **_OH},
+     "a": {**_AMP_V, "xMgM13": 1, "xFeM2": 1, "xFeM4": 1, **_T8, **_OH},
+     "b": {**_AMP_V, "xFeM13": 1, "xMgM2": 1, "xFeM4": 1, **_T8, **_OH},
+     "mrb": {**_AMP_V, "xMgM13": 1, "xFe3M2": 1, "xNaM4": 1, **_T8, **_OH},
+     "kprg": {"xKA": 1, "xMgM13": 1, "xMgM2": 0.5, "xAlM2": 0.5, "xCaM4": 1, **_T62, **_OH},
+     "tts": {**_AMP_V, "xMgM13": 1, "xTiM2": 1, "xCaM4": 1, **_T62, "xOV": 1}},
+    {"tr": A(xvA=1, xCaM4=2, xSiT1=1, xOHV=2, xMgM13=3, xMgM2=2),
+     "tsm": A(2.0, xvA=1, xCaM4=2, xSiT1=0.5, xAlT1=0.5, xOHV=2, xMgM13=3, xAlM2=2),
+     "prgm": A(8.0, xCaM4=2, xSiT1=0.5, xAlT1=0.5, xOHV=2, xNaA=1, xMgM13=3, xMgM2=1, xAlM2=1),
+     "glm": A(xvA=1, xNaM4=2, xSiT1=1, xOHV=2, xMgM13=3, xAlM2=2),
+     "cumm": A(xvA=1, xMgM4=2, xSiT1=1, xOHV=2, xMgM13=3, xMgM2=2),
+     "grnm": A(xvA=1, xFeM4=2, xSiT1=1, xOHV=2, xFeM13=3, xFeM2=2),
+     "a": A(xvA=1, xFeM4=2, xSiT1=1, xOHV=2, xMgM13=3, xFeM2=2),
+     "b": A(xvA=1, xFeM4=2, xSiT1=1, xOHV=2, xFeM13=3, xMgM2=2),
+     "mrb": A(xvA=1, xNaM4=2, xSiT1=1, xOHV=2, xMgM13=3, xFe3M2=2),
+     "kprg": A(8.0, xCaM4=2, xSiT1=0.5, xAlT1=0.5, xOHV=2, xKA=1, xMgM13=3, xMgM2=1, xAlM2=1),
+     "tts": A(2.0, xvA=1, xCaM4=2, xSiT1=0.5, xAlT1=0.5, xOV=2, xMgM13=3, xTiM2=2)},
+    _pairs(11, [20.0, 25.0, 65.0, 45.0, 75.0, 57.0, 63.0, 52.0, 30.0, 85.0,
+                -40.0, 25.0, 70.0, 80.0, 70.0, 72.5, 20.0, -40.0, 35.0,
+                50.0, 90.0, 106.7, 94.8, 94.8, 40.0, 8.0, 15.0,
+                100.0, 113.5, 100.0, 111.2, 0.0, 54.0, 75.0,
+                33.0, 18.0, 23.0, 80.0, 87.0, 100.0,
+                12.0, 8.0, 91.0, 96.0, 65.0,
+                20.0, 80.0, 94.0, 95.0,
+                90.0, 94.0, 95.0,
+                50.0, 50.0,
+                35.0]),
+    v=(1.0, 1.5, 1.7, 0.8, 1.0, 1.0, 1.0, 1.0, 0.8, 1.7, 1.5),
+)
+
+
+# ---- cordierite, epidote, chlorite (Holland, Green and Powell 2018 and sources) -------------------------
+CORDIERITE = HPSolution(
+    "cd",
+    (em("crd", (1, "crd")), em("fcrd", (1, "fcrd")), em("hcrd", (1, "hcrd"))),
+    ("xFeX", "xMgX", "xH2OH", "xvH"),
+    {"crd": {"xMgX": 1, "xvH": 1}, "fcrd": {"xFeX": 1, "xvH": 1}, "hcrd": {"xMgX": 1, "xH2OH": 1}},
+    {"crd": A(xMgX=2, xvH=1), "fcrd": A(xFeX=2, xvH=1), "hcrd": A(xMgX=2, xH2OH=1)},
+    _pairs(3, [2.5, 0.0, 2.0]),
+)
+
+EPIDOTE = HPSolution(
+    "ep",
+    (em("cz", (1, "cz")), em("ep", (1, "ep")), em("fep", (1, "fep"))),
+    ("xFeM1", "xAlM1", "xFeM3", "xAlM3"),
+    {"cz": {"xAlM1": 1, "xAlM3": 1}, "ep": {"xAlM1": 1, "xFeM3": 1}, "fep": {"xFeM1": 1, "xFeM3": 1}},
+    {"cz": A(xAlM1=1, xAlM3=1), "ep": A(xAlM1=1, xFeM3=1), "fep": A(xFeM1=1, xFeM3=1)},
+    _pairs(3, [1.0, 3.0, 1.0]),
+)
+
+_T2S = {"xSiT2": 0.5, "xAlT2": 0.5}
+CHLORITE = HPSolution(
+    "chl",
+    (em("clin", (1, "clin")), em("afchl", (1, "afchl")), em("ames", (1, "ames")), em("daph", (1, "daph")),
+     em("ochl1", (1, "afchl"), (-1, "clin"), (1, "daph"), dqf=(3.0, 0.0, 0.0)),
+     em("ochl4", (1, "afchl"), (-0.2, "clin"), (0.2, "daph"), dqf=(2.4, 0.0, 0.0)),
+     em("f3clin", (0.5, "andr"), (1, "clin"), (-0.5, "gr"), dqf=(2.0, 0.0, 0.0))),
+    ("xMgM1", "xFeM1", "xAlM1", "xMgM23", "xFeM23", "xMgM4", "xFeM4", "xFe3M4", "xAlM4", "xSiT2", "xAlT2"),
+    {"clin": {"xMgM1": 1, "xMgM23": 1, "xAlM4": 1, **_T2S},
+     "afchl": {"xMgM1": 1, "xMgM23": 1, "xMgM4": 1, "xSiT2": 1},
+     "ames": {"xAlM1": 1, "xMgM23": 1, "xAlM4": 1, "xAlT2": 1},
+     "daph": {"xFeM1": 1, "xFeM23": 1, "xAlM4": 1, **_T2S},
+     "ochl1": {"xMgM1": 1, "xFeM23": 1, "xFeM4": 1, "xSiT2": 1},
+     "ochl4": {"xFeM1": 1, "xMgM23": 1, "xMgM4": 1, "xSiT2": 1},
+     "f3clin": {"xMgM1": 1, "xMgM23": 1, "xFe3M4": 1, **_T2S}},
+    {"clin": A(4.0, xMgM1=1, xAlT2=1, xMgM23=4, xAlM4=1, xSiT2=1),
+     "afchl": A(xMgM1=1, xMgM23=4, xMgM4=1, xSiT2=2),
+     "ames": A(xAlT2=2, xAlM1=1, xMgM23=4, xAlM4=1),
+     "daph": A(4.0, xAlT2=1, xFeM1=1, xFeM23=4, xAlM4=1, xSiT2=1),
+     "ochl1": A(xMgM1=1, xFeM23=4, xFeM4=1, xSiT2=2),
+     "ochl4": A(xFeM1=1, xMgM23=4, xMgM4=1, xSiT2=2),
+     "f3clin": A(4.0, xMgM1=1, xAlT2=1, xMgM23=4, xFe3M4=1, xSiT2=1)},
+    _pairs(7, [17.0, 17.0, 20.0, 30.0, 21.0, 2.0,
+               16.0, 37.0, 20.0, 4.0, 15.0,
+               30.0, 29.0, 13.0, 19.0,
+               18.0, 33.0, 22.0,
+               24.0, 28.6,
+               19.0]),
+)
+
+SOLUTIONS = {s.name: s for s in (OLIVINE, FELDSPAR, SPINEL, ILMENITE, GARNET, BIOTITE, MUSCOVITE,
+                                    ORTHOPYROXENE, CLINOPYROXENE, AMPHIBOLE, CORDIERITE, EPIDOTE, CHLORITE)}
