@@ -83,6 +83,12 @@ class HPSolution:
         self._w = np.zeros((n, n, 3))
         for (i, j), abc in self.w.items():
             self._w[i, j] = self._w[j, i] = abc
+        self._lnk = np.array([math.log(k) for k, _ in self._act])
+        self._e = np.zeros((n, m))
+        for i, (_, pw) in enumerate(self._act):
+            for j, x in pw:
+                self._e[i, j] += x
+        self._g0_cache = {}
 
     @property
     def names(self) -> tuple:
@@ -93,53 +99,45 @@ class HPSolution:
         return len(self.end_members)
 
     def g0(self, t: float, p: float) -> np.ndarray:
-        return np.array([e.g(t, p) for e in self.end_members])
+        key = (float(t), float(p))
+        g = self._g0_cache.get(key)
+        if g is None:
+            if len(self._g0_cache) > 512:
+                self._g0_cache.clear()
+            g = self._g0_cache[key] = np.array([e.g(t, p) for e in self.end_members])
+        return g
 
     def site_fractions(self, prop) -> np.ndarray:
         return self._a @ np.asarray(prop, float)
 
     def ln_activity_ideal(self, prop) -> np.ndarray:
         sf = self.site_fractions(prop)
-        out = np.empty(self.n)
-        for i, (k, pw) in enumerate(self._act):
-            v = math.log(k)
-            for j, x in pw:
-                v += x * math.log(sf[j]) if sf[j] > 0 else -math.inf
-            out[i] = v
-        return out
+        with np.errstate(divide="ignore", invalid="ignore"):
+            lsf = np.where(sf > 0, np.log(np.where(sf > 0, sf, 1.0)), -np.inf)
+            terms = np.where(self._e != 0, self._e * lsf, 0.0)
+        return self._lnk + terms.sum(axis=1)
 
     def w_matrix(self, t: float, p: float) -> np.ndarray:
         return self._w[:, :, 0] + self._w[:, :, 1] * t + self._w[:, :, 2] * p
 
+    def _wstar(self, prop, t, p):
+        w = self.w_matrix(t, p)
+        if self.v is None:
+            return prop, np.ones(self.n), w, 1.0
+        v = np.asarray(self.v, float)
+        vt = prop @ v
+        return prop * v / vt, v, w * 2.0 / (v[:, None] + v[None, :]), vt
+
     def mu_excess(self, prop, t: float, p: float) -> np.ndarray:
         prop = np.asarray(prop, float)
-        w = self.w_matrix(t, p)
-        n = self.n
-        if self.v is None:
-            phi, scale = prop, np.ones(n)
-            wstar = w
-        else:
-            v = np.asarray(self.v, float)
-            phi = prop * v / (prop @ v)
-            wstar = w * 2.0 / (v[:, None] + v[None, :])
-            scale = v
-        out = np.empty(n)
-        for k in range(n):
-            q = -phi.copy()
-            q[k] += 1.0
-            out[k] = -scale[k] * sum(q[i] * q[j] * wstar[i, j] for i in range(n) for j in range(i + 1, n))
-        return out
+        phi, scale, wstar, _ = self._wstar(prop, t, p)
+        q = np.eye(self.n) - phi[None, :]
+        return -0.5 * scale * np.einsum("ki,ij,kj->k", q, wstar, q)
 
     def g_excess(self, prop, t: float, p: float) -> float:
         prop = np.asarray(prop, float)
-        w = self.w_matrix(t, p)
-        if self.v is None:
-            return float(sum(prop[i] * prop[j] * w[i, j] for i in range(self.n) for j in range(i + 1, self.n)))
-        v = np.asarray(self.v, float)
-        vt = prop @ v
-        phi = prop * v / vt
-        return float(vt * sum(phi[i] * phi[j] * w[i, j] * 2.0 / (v[i] + v[j])
-                              for i in range(self.n) for j in range(i + 1, self.n)))
+        phi, _, wstar, vt = self._wstar(prop, t, p)
+        return float(0.5 * vt * phi @ wstar @ phi)
 
     def mu(self, prop, t: float, p: float) -> np.ndarray:
         """Chemical potentials of the end members, kJ/mol, at proportions prop (sum 1)."""
