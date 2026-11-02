@@ -48,6 +48,14 @@ OXIDES_OF = {
     "grossular": {"CaO": 3, "Al2O3": 1, "SiO2": 3},
     "pyrope": {"MgO": 3, "Al2O3": 1, "SiO2": 3},
     "water": {"H2O": 1},
+    "quartz_beta": {"SiO2": 1},
+    "tridymite": {"SiO2": 1},
+    "muscovite": {"K2O": 0.5, "Al2O3": 1.5, "SiO2": 3, "H2O": 1},
+    "annite": {"K2O": 0.5, "FeO": 3, "Al2O3": 0.5, "SiO2": 3, "H2O": 1},
+    "phlogopite": {"K2O": 0.5, "MgO": 3, "Al2O3": 0.5, "SiO2": 3, "H2O": 1},
+    "pargasite": {"Na2O": 0.5, "CaO": 2, "MgO": 4, "Al2O3": 1.5, "SiO2": 6, "H2O": 1},
+    "ferropargasite": {"Na2O": 0.5, "CaO": 2, "FeO": 4, "Al2O3": 1.5, "SiO2": 6, "H2O": 1},
+    "magnesiohastingsite": {"Na2O": 0.5, "CaO": 2, "MgO": 4, "Fe2O3": 0.5, "Al2O3": 1, "SiO2": 6, "H2O": 1},
 }
 
 
@@ -193,5 +201,11 @@ from .pyroxene import CLINOPYROXENE, ORTHOPYROXENE, PIGEONITE   # noqa: E402
 from .spinel import SPINEL, TITANOMAGNETITE              # noqa: E402
 from .rhombohedral import RHOMBOHEDRAL                   # noqa: E402
 from .water_fluid import WATER_FLUID                     # noqa: E402
+from .felsic import (ALKALI_FELDSPAR, BIOTITE, HORNBLENDE, MUSCOVITE, OR_SPLIT, QUARTZ,  # noqa: E402
+                     TRIDYMITE, Feldspar)
 
-PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE, PIGEONITE, ORTHOPYROXENE, SPINEL, TITANOMAGNETITE, RHOMBOHEDRAL, GARNET, WATER_FLUID)}
+# plagioclase: the same model as alkali feldspar, searched on the Or-poor side of the solvus
+FELDSPAR = Feldspar("feldspar", (0.0, OR_SPLIT))
+
+PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE, PIGEONITE, ORTHOPYROXENE, SPINEL, TITANOMAGNETITE, RHOMBOHEDRAL, GARNET,
+                                    HORNBLENDE, BIOTITE, ALKALI_FELDSPAR, MUSCOVITE, QUARTZ, TRIDYMITE, WATER_FLUID)}

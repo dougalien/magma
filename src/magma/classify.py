@@ -51,11 +51,11 @@ SILICA_TYPES = [(45.0, "ultramafic melt"), (52.0, "basalt"), (57.0, "basaltic an
 BOWEN_DISCONTINUOUS = [
     ("olivine", ("olivine",)),
     ("pyroxene", ("orthopyroxene", "pigeonite", "clinopyroxene")),
-    ("amphibole", ()),
-    ("biotite", ()),
+    ("amphibole", ("hornblende",)),
+    ("biotite", ("biotite",)),
 ]
 BOWEN_CONTINUOUS = [("Ca-rich plagioclase", ("feldspar",)), ("Na-rich plagioclase", ("feldspar",))]
-BOWEN_LATE = [("K-feldspar", ()), ("muscovite", ()), ("quartz", ())]
+BOWEN_LATE = [("K-feldspar", ("alkali-feldspar",)), ("muscovite", ("muscovite",)), ("quartz", ("quartz", "tridymite"))]
 
 
 def _tas_point(comp: Composition) -> tuple[float, float]:

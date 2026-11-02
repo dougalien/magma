@@ -20,7 +20,7 @@ from .equilibrium import EquilibriumResult, Equilibrator
 from .path import SOLIDUS_MELT, allowed_phases
 from .thermo.phases import OXIDES_OF
 
-DEFAULT_PHASES = ("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "titanomagnetite", "rhombohedral", "garnet", "water")
+DEFAULT_PHASES = ("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "titanomagnetite", "rhombohedral", "garnet", "hornblende", "biotite", "alkali-feldspar", "muscovite", "quartz", "tridymite", "water")
 T_LIQUIDUS_START = 1900.0       # degC; the cooling run that gives batch melting starts here at most
 
 

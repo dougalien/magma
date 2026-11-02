@@ -181,3 +181,12 @@ table.steps td.l, table.steps th.l { text-align: left; }
 .bowen .temp { grid-column: 1 / span 2; display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 4px; }
 .types { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
 .types span { border: 1px solid var(--line-strong); border-radius: 999px; padding: 2px 10px; font-size: 12px; }
+
+/* Starter cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.scard { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 9px 11px; border-radius: 10px;
+  border: 1px solid var(--line-strong); background: var(--panel); cursor: pointer; font: inherit; color: var(--ink); }
+.scard:hover { border-color: var(--accent); }
+.scard.on { border-color: var(--accent); background: var(--accent-bg); }
+.scard .blurb { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.scard .meta { font-size: 11px; color: var(--faint); margin-top: 2px; }

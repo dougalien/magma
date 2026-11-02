@@ -115,13 +115,44 @@ andesite to 950 C, and an andesite by silica (about 60 wt% SiO2) at 900 C with 2
 Dry and at QFM the same melt instead follows the iron-enrichment (Fenner, tholeiitic) trend: plagioclase
 comes in at 1220 C, no magnetite forms, and the melt gets poorer in silica.
 
-Where the model runs out: amphibole, biotite, K-feldspar, muscovite and quartz are not in Magma yet,
-so the lower half of Bowen's series cannot form, and these are what drive a wet andesite on to dacite
-and rhyolite.  The liquid also holds sodium too well (as MELTS does), so the evolved melts carry
-9-11 wt% Na2O + K2O and plot in the trachyandesite and trachyte fields of TAS; the app names the type by
-silica and says so.  To reach rhyolite properly the model needs amphibole and biotite (Ghiorso and
-Evans-style or the MELTS hornblende/biotite models), a separate alkali feldspar, quartz/tridymite, and
-ideally the rhyolite-MELTS liquid recalibration (Gualda et al. 2012).
+Where the model runs out: the MELTS liquid holds sodium too well, which ThermoEngine's own MELTS does
+too (its MORB fractionation example reaches 7 wt% Na2O at 1025 C; Magma's run of the same example
+tracks its plotted melt to within about 2 wt% for each oxide down to 1075 C).  The mantle melt is poor in potassium, so its evolved melt
+builds up Na2O: biotite comes in at 820 C at about 62 wt% SiO2, and below about 800 C the melt's silica
+falls while Na2O + K2O climbs past 12 wt%.  The app flags that tail and says to read no further.  The
+example stops at 800 C by default.
+
+## The late minerals and the granite minimum
+
+Quartz, tridymite, K-feldspar (a second copy of the feldspar model, Or above 30%, as MELTS has
+Plagioclase and Sanidine), muscovite, biotite (annite-phlogopite) and hornblende (pargasite,
+ferropargasite, magnesiohastingsite) are in `thermo/felsic.py`, with the MELTS v1.0.2 (rhyolite-MELTS)
+parameters from ThermoEngine (numbers only; Douglas's approval).  For them, water in the melt and in the
+fluid is now on the minerals' energy scale: G_water(T, 1 bar) from IAPWS-95, shifted to H = -285830 J and
+S = 69.95 J/K at 298.15 K.  Checked against ThermoEngine's MELTS v1.0.2 example (Early Bishop Tuff,
+760 C, 175 MPa):
+
+| Phase | MELTS affinity | Magma |
+| --- | --- | --- |
+| Biotite | 19819 J undersaturated | 20257 J |
+| Muscovite | 25188 J | 25310 J |
+| Hornblende | 54565 J | 55573 J |
+| Tridymite | 2141 J | 2198 J |
+| Quartz, sanidine | present (1.2 g, 2.3 g Or49) | 57 J and 114 J short of saturation |
+
+The "Arc andesite" card (bulk continental crust with 3 wt% H2O, 2 kbar, NNO, fractional) runs the end
+of Bowen's series: orthopyroxene and augite, then plagioclase with magnetite, dacite by 990 C, rhyolite
+by 870 C, and quartz with biotite at 730 C and K-feldspar at 720 C, where the last melt (77 wt% SiO2)
+freezes at the granite minimum.  MELTS's hornblende is a simple model and seldom saturates; it does not
+form in these runs.
+
+## Cards
+
+The control window starts with cards: melts to cool (MORB, high-alumina basalt, arc andesite, dacite,
+Bishop Tuff rhyolite), rocks to melt (KLB-1 peridotite, amphibolite, lower crust, upper crust) and the
+mantle-to-magma story.  Each sets the composition and conditions; `composition.CARDS` lists them.
+The crustal compositions (Rudnick and Gao 2003) were entered from memory and need checking against the
+paper, like KLB-1.
 
 Two fixes came with this: a spinel whose most stable composition is rich in a scarce oxide (Cr-spinel
 from a melt with a few hundred ppm Cr2O3) could not be added even when oversaturated, because the
@@ -129,7 +160,7 @@ solver's first trial amount needed more Cr2O3 than the system had; and the spine
 second, chromite-free copy ("titanomagnetite"), as MELTS allows two spinels, since the Cr-spinel copy
 stays on its Cr-rich side of the solvus.  Without Cr2O3 in the system only one copy is used.
 
-Next: hydrous minerals (amphibole, biotite), quartz and the other silica phases, and speed.
+Next: speed (each step now takes 5-15 s with sixteen phases), and a better-behaved liquid for sodium.
 
 ## The app
 

@@ -98,6 +98,30 @@ function show(st) {
   if (st.status === "error") { $("err").textContent = st.message; $("err").style.display = ""; }
 }
 
+function applyCard(c) {
+  setProcess(c.kind === "rock" ? "melt" : c.kind === "example" ? "example" : "crystallize");
+  if (c.kind === "example") return;
+  $("preset").value = c.preset; fillPreset(c.preset);
+  $("t_start").value = c.t_start; $("t_end").value = c.t_end; $("step").value = c.step; $("p_bar").value = c.p_bar;
+  const m = /^([A-Z]+)([+-][\d.]+)?$/.exec(c.fo2 || "QFM");
+  $("buffer").value = c.fo2 === "closed" ? "closed" : (m ? m[1] : "QFM");
+  $("offset").value = m && m[2] ? parseFloat(m[2]) : 0;
+  $("offset-wrap").style.display = c.fo2 === "closed" ? "none" : "";
+  MODE = c.mode;
+  document.querySelectorAll("#mode button").forEach((x) => x.classList.toggle("on", x.dataset.mode === MODE));
+  hint();
+  document.querySelectorAll(".cards .scard").forEach((x) => x.classList.toggle("on", x.dataset.title === c.title));
+}
+
+function cardEl(c) {
+  const p = INFO.presets[c.preset];
+  const si = p ? (100 * p.wt.SiO2 / Object.values(p.wt).reduce((a, b) => a + b, 0)).toFixed(0) : null;
+  const meta = c.kind === "example" ? "KLB-1, then cool its melt" :
+    `${si}% SiO2 · ${c.kind === "rock" ? `${c.p_bar / 1000} kbar, ${c.t_start} to ${c.t_end} °C` : `${c.t_start} to ${c.t_end} °C, ${c.p_bar / 1000} kbar`}`;
+  return h("button", { class: "scard", "data-title": c.title, onclick: () => applyCard(c) },
+    h("b", {}, c.title), h("span", { class: "blurb" }, c.blurb), h("span", { class: "meta" }, meta));
+}
+
 async function init() {
   INFO = await (await fetch("/api/presets")).json();
   const sel = $("preset");
@@ -125,6 +149,9 @@ async function init() {
   $("stop").addEventListener("click", () => api("/api/stop"));
   $("open-results").addEventListener("click", openResults);
   fillPreset(sel.value);
+  for (const c of INFO.cards || []) $(c.kind === "rock" ? "cards-rock" : "cards-melt").append(cardEl(c));
+  $("cards-example").append(cardEl({ kind: "example", title: "Mantle to magma: Bowen's series",
+    blurb: "Partly melt the mantle, then cool that melt with fractional crystallization through Bowen's series." }));
   connect(show, (ok) => { $("pill-link").textContent = ok ? "running" : "not connected"; $("pill-link").className = `pill ${ok ? "ok" : "bad"}`; });
 }
 init();
