@@ -22,9 +22,10 @@ import numpy as np
 
 from ..classify import BOWEN_CONTINUOUS, BOWEN_DISCONTINUOUS, BOWEN_LATE, TAS_FIELDS, TAS_LINES, magma_type, tas_name, tas_point
 from ..composition import CARDS, OXIDES, PRESETS, Composition
-from ..differentiation import DEFAULTS as EXAMPLE_DEFAULTS, iter_differentiate, melt_source
+from ..differentiation import DEFAULTS as EXAMPLE_DEFAULTS, iter_differentiate, melt_source, primary_with_water
 from ..melting import iter_melt
 from ..path import iter_crystallize
+from ..hp import engine as hp_engine
 from ..thermo.phases import PHASES
 
 STATIC = Path(__file__).resolve().parent / "static"
@@ -36,6 +37,27 @@ PHASE_LABEL = {"olivine": "Olivine", "feldspar": "Plagioclase", "clinopyroxene":
                "hornblende": "Hornblende", "biotite": "Biotite", "alkali-feldspar": "K-feldspar",
                "muscovite": "Muscovite", "quartz": "Quartz", "tridymite": "Tridymite",
                "water": "Water (fluid)"}
+PHASE_LABEL.update(hp_engine.LABEL)
+ENGINES = ("melts", "hp")
+
+HP_NOTES = [
+    "Engine: Holland and Powell. End-member data from the Holland and Powell (2011) data set (ds636); "
+    "solution models of the igneous set of Holland, Green and Powell (2018) with the amphibole of Green "
+    "et al. (2016) and the micas, cordierite, epidote and chlorite of White et al. (2014); liquid and "
+    "aqueous fluid of Holland, Green and Powell (2018). Parameter values as published and as used in "
+    "MAGEMin (Riel et al. 2022); the equations are Magma's own code, checked against MAGEMin.",
+    "Each step is a Gibbs energy minimization over all the phases at once, so the path can go below the "
+    "solidus and phases MELTS lacks can appear: cordierite, epidote, chlorite, rutile, sphene, the "
+    "Al2SiO5 minerals, corundum and nepheline. A feldspar with Or above 30% is shown as K-feldspar, a "
+    "clinopyroxene with Wo below 25% as pigeonite, a spinel with more than half magnetite and "
+    "ulvospinel as titanomagnetite.",
+    "Not in this engine: MnO, P2O5, NiO, CoO and CO2 (left out), apatite and zircon. The liquid model is "
+    "calibrated for 1 to 30 kbar and is least certain at very low pressure.",
+    "Iron: the system is open to oxygen at the chosen buffer (or closed, keeping its starting Fe2O3).",
+    "Masses are grams per 100 g of starting material. In fractional crystallization the solids of each "
+    "step are removed, and the solid masses shown are the totals removed so far. Melting shows the steps "
+    "from the first melt (the solidus) upward.",
+]
 
 NOTES = [
     "Liquid: Ghiorso and Sack (1995) regular-solution model, with the parameter values used in MELTS.",
@@ -96,7 +118,8 @@ class State:
     def snapshot(self) -> dict:
         return {"version": self.version, "status": self.status, "message": self.message,
                 "progress": self.progress, "inputs": self.inputs, "steps": self.steps,
-                "run_id": self.run_id, "notes": NOTES, "app_version": __version__,
+                "run_id": self.run_id,
+                "notes": HP_NOTES if self.inputs.get("engine") == "hp" else NOTES, "app_version": __version__,
                 "source": self.source}
 
     def changed(self):
@@ -130,8 +153,9 @@ class State:
                 return self._run_melt(bulk, kw)
             if kw["process"] == "example":
                 return self._run_example(bulk, kw)
-            kw = {k: v for k, v in kw.items() if k != "process"}
-            for r in iter_crystallize(bulk, **kw):
+            kw = {k: v for k, v in kw.items() if k not in ("process", "engine")}
+            cool = hp_engine.iter_crystallize if self.inputs.get("engine") == "hp" else iter_crystallize
+            for r in cool(bulk, **kw):
                 step = step_json(r)
                 if kw["mode"] == "fractional":
                     for s in step["solids"]:
@@ -152,8 +176,13 @@ class State:
             else:
                 self.status = "done"
                 if self.steps and self.steps[-1]["t"] > kw["t_end"] + 1e-6:
-                    self.message = (f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is nearly gone (near the "
-                                    "solidus), which Magma cannot follow further yet.")
+                    if self.inputs.get("engine") == "hp":
+                        self.message = f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is used up (the solidus)."
+                    else:
+                        self.message = (f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is nearly gone (near the "
+                                        "solidus), which Magma cannot follow further yet.")
+                elif not self.steps:
+                    self.message = "No melt at these conditions: the composition is below its solidus."
         except Exception as exc:          # shown in both windows
             self.status, self.message = "error", f"{type(exc).__name__}: {exc}"
         self.changed()
@@ -166,8 +195,10 @@ class State:
                 raise _Stopped()
         args = dict(kw, mode="batch" if kw["mode"] == "equilibrium" else "fractional")
         args.pop("process")
+        hp = args.pop("engine") == "hp"
         try:
-            for m in iter_melt(bulk, on_progress=progress if args["mode"] == "batch" else None, **args):
+            melt = hp_engine.iter_melt if hp else iter_melt
+            for m in melt(bulk, on_progress=progress if (hp or args["mode"] == "batch") else None, **args):
                 step = step_json(m.result)
                 step["extracted_grams"] = m.extracted_grams
                 step["pooled_grams"] = m.pooled_grams
@@ -175,7 +206,7 @@ class State:
                     step["pooled"] = {ox: m.pooled.get(ox) for ox in OXIDES if m.pooled.get(ox) > 0}
                     step["pooled_mg"] = m.pooled.mg_number
                 self.steps.append(step)
-                if args["mode"] == "fractional":
+                if args["mode"] == "fractional" and not hp:
                     self.progress = [len(self.steps), self.progress[1]]
                 self.changed()
                 if self._stop.is_set():
@@ -184,7 +215,8 @@ class State:
             if not self.steps:
                 self.message = "The rock does not melt at these temperatures (below its solidus)."
             elif self.steps[0]["t"] > kw["t_start"] + 1e-6:
-                self.message = (f"Melting starts near {self.steps[0]['t']:.0f} °C, the lowest temperature "
+                self.message = (f"Melting starts near {self.steps[0]['t']:.0f} °C (the solidus)." if hp else
+                                f"Melting starts near {self.steps[0]['t']:.0f} °C, the lowest temperature "
                                 "Magma could follow (the solidus).")
         except _Stopped:
             self.status, self.message = "stopped", "Stopped."
@@ -199,18 +231,30 @@ class State:
             self.message = (f"Melting the mantle at {kw['t_source']:.0f} °C and {kw['p_source'] / 1000:g} kbar "
                             "(this takes a minute or two)...")
             self.changed()
-            src = melt_source(rock, kw["t_source"], kw["p_source"], fo2=kw["fo2_source"], phases=kw["phases"])
+            hp = kw["engine"] == "hp"
+            if hp:
+                src_result, primary = hp_engine.melt_source(rock, kw["t_source"], kw["p_source"],
+                                                            fo2=kw["fo2_source"], phases=kw["phases"])
+            else:
+                src = melt_source(rock, kw["t_source"], kw["p_source"], fo2=kw["fo2_source"], phases=kw["phases"])
+                src_result, primary = src.result, src.primary
             if self._stop.is_set():
                 raise _Stopped()
-            sj = step_json(src.result)
-            sj["primary"] = {ox: src.primary.get(ox) for ox in OXIDES if src.primary.get(ox) > 0}
-            sj["primary_mg"] = src.primary.mg_number
+            sj = step_json(src_result)
+            sj["primary"] = {ox: primary.get(ox) for ox in OXIDES if primary.get(ox) > 0}
+            sj["primary_mg"] = primary.mg_number
             self.source = sj
             self.message = ""
             self.changed()
             removed: dict[str, float] = {}
-            for r in iter_differentiate(src.primary, kw["t_source"], kw["t_end"], kw["step"], kw["p_bar"],
-                                        kw["h2o"], kw["fo2"], kw["phases"]):
+            if hp:
+                path = hp_engine.iter_crystallize(primary_with_water(primary, kw["h2o"]), kw["t_source"],
+                                                  kw["t_end"], kw["step"], kw["p_bar"], kw["fo2"], "fractional",
+                                                  kw["phases"])
+            else:
+                path = iter_differentiate(primary, kw["t_source"], kw["t_end"], kw["step"], kw["p_bar"],
+                                          kw["h2o"], kw["fo2"], kw["phases"])
+            for r in path:
                 step = step_json(r)
                 for s in step["solids"]:
                     removed[s["name"]] = removed.get(s["name"], 0.0) + s["grams"]
@@ -228,7 +272,8 @@ class State:
                     raise _Stopped()
             self.status = "done"
             if self.steps and self.steps[-1]["t"] > kw["t_end"] + 1e-6:
-                self.message = (f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is nearly gone, which Magma "
+                self.message = (f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is used up (the solidus)." if hp else
+                                f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is nearly gone, which Magma "
                                 "cannot follow further yet.")
         except _Stopped:
             self.status, self.message = "stopped", "Stopped."
@@ -263,7 +308,9 @@ def parse_inputs(d: dict) -> tuple[Composition, dict]:
     kw = dict(t_start=float(d.get("t_start", 1250)), t_end=float(d.get("t_end", 1150)),
               step=float(d.get("step", 5)), p_bar=float(d.get("p_bar", 1)),
               fo2=_fo2_arg(d.get("fo2", "QFM")), mode=d.get("mode", "equilibrium"), phases=tuple(phases),
-              process=d.get("process", "crystallize"))
+              process=d.get("process", "crystallize"), engine=d.get("engine", "hp"))
+    if kw["engine"] not in ENGINES:
+        raise ValueError("engine must be melts or hp")
     if kw["mode"] not in ("equilibrium", "fractional"):
         raise ValueError("mode must be equilibrium or fractional")
     if kw["process"] not in ("crystallize", "melt", "example"):
@@ -324,6 +371,14 @@ def _numbers(name: str, x: dict) -> dict:
     return {}
 
 
+def _solid_json(s) -> dict:
+    if isinstance(s, hp_engine.HPPhase):
+        return {"name": s.name, "label": PHASE_LABEL.get(s.name, s.name), "grams": s.grams, "x": s.x,
+                "numbers": s.numbers, "formula": s.formula}
+    return {"name": s.name, "label": PHASE_LABEL.get(s.name, s.name), "grams": s.grams, "x": s.x,
+            "numbers": _numbers(s.name, s.x), "formula": PHASES[s.name].formula(np.array(list(s.x.values())))}
+
+
 def step_json(r) -> dict:
     liq = r.liquid
     return {
@@ -331,9 +386,7 @@ def step_json(r) -> dict:
         "liquid": {ox: liq.get(ox) for ox in OXIDES if liq.get(ox) > 0},
         "mg_number": liq.mg_number,
         "magma_type": magma_type(liq), "tas": tas_name(liq), "tas_xy": tas_point(liq),
-        "solids": [{"name": s.name, "label": PHASE_LABEL.get(s.name, s.name), "grams": s.grams,
-                    "x": s.x, "numbers": _numbers(s.name, s.x),
-                    "formula": PHASES[s.name].formula(np.array(list(s.x.values())))} for s in r.solids],
+        "solids": [_solid_json(s) for s in r.solids],
         # JSON has no infinity: a phase that cannot form at all (its affinity is -inf) is sent as null
         "affinities": {k: (float(v) if np.isfinite(v) else None) for k, v in r.affinities.items()},
     }

@@ -162,7 +162,7 @@ stays on its Cr-rich side of the solvus.  Without Cr2O3 in the system only one c
 
 Next: speed (each step now takes 5-15 s with sixteen phases), and a better-behaved liquid for sodium.
 
-## A second engine: Holland & Powell (in progress)
+## A second engine: Holland & Powell
 
 MELTS is weak where Bowen's series ends: its hornblende never forms, and its liquid keeps too much
 sodium below about 800 C.  Magma is gaining a second, self-consistent system for cool, wet magmas:
@@ -198,7 +198,21 @@ chemical potential matches MAGEMin's oxide chemical potentials to 0.0001 kJ (tes
 points in tests/data/hp_magemin_points.json).  The fluid moves to step 4, since it uses the melt's
 formulation.
 
-The engine is not yet used by any calculation.
+Step 4 is in: the silicate liquid and aqueous fluid of Holland, Green and Powell (2018), and
+`magma/hp/minimize.py`, a Gibbs energy minimizer of our own (linear programming with column generation,
+then a Newton solve of the exact equilibrium on the assemblage found).  At the seventeen MAGEMin points
+it finds the same assemblage (two feldspars and two amphiboles included) with oxide chemical potentials
+within 0.001 kJ (tests/test_hp_minimize.py).  The system can be open to oxygen at a buffer (an O2
+reservoir at the buffer's fO2), and a path step starts from the step before: if the assemblage holds, a
+step takes about a second instead of 5-30.
+
+Step 5 is in: `magma/hp/engine.py` runs cooling and melting paths and the mantle-to-magma example on this
+engine, and the control window has an engine switch (MELTS or Holland & Powell).  The HP phases are shown
+under the app's mineral names; a feldspar with Or above 30% is K-feldspar, a clinopyroxene with Wo below
+25% is pigeonite, and a spinel that is mostly magnetite and ulvospinel is titanomagnetite.  Phases MELTS
+lacks keep their own names (cordierite, epidote, chlorite, rutile, sphene, the Al2SiO5 minerals,
+corundum, nepheline).  MnO, P2O5, NiO, CoO and CO2 are left out.  The engine also works below the solidus,
+so a cooling path runs until the melt is used up, and batch melting starts from the solid rock.
 
 ## The app
 
