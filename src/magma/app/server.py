@@ -305,6 +305,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._file(STATIC / PAGES[path])
         if path.startswith("/static/"):
             return self._file(STATIC / path[len("/static/"):])
+        if path == "/favicon.ico":                      # the Magma M, for browsers and pinned shortcuts that ask for it
+            return self._file(STATIC / "magma.ico")
         if path == "/api/state":
             return self._json(self.state.snapshot())
         if path == "/api/presets":
