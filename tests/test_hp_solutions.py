@@ -25,15 +25,22 @@ def test_mu_at_magemin_equilibrium(pt, ph):
     comp = s.compositions()[:, [OXIDES.index(o) for o in IG]]
     mu = s.mu(prop, t, p)
     ok = np.isfinite(mu)          # an end member with an empty site (no Cr) has mu = -inf
-    assert np.max(np.abs(mu[ok] - (comp @ gamma)[ok])) < 0.01
+    # end members held at MAGEMin's lower bound (p <= 1e-5, as in the fluid) are not at equilibrium;
+    # they are checked against MAGEMin's own mu below instead
+    eq = ok & (np.abs(prop) > 1e-5)
+    assert np.max(np.abs(mu[eq] - (comp @ gamma)[eq])) < 0.01
+    em_mu = np.array(ph["mu"])
+    factor = (em_mu[eq] @ mu[eq]) / (mu[eq] @ mu[eq])
+    assert np.max(np.abs(mu[ok] - em_mu[ok] / factor)) < 0.01
 
 
 @pytest.mark.parametrize("name", sorted(SOLUTIONS))
 def test_mu_is_derivative_of_g(name):
     """mu_i = d(N G)/dn_i, so the activities and excess terms are mutually consistent.
 
-    Feldspar is the exception for the ideal part: its Al-avoidance activities (Holland and Powell 2003)
-    are not the exact derivative of one entropy, so only its excess term is held to this.
+    Feldspar and the fluid are the exceptions for the ideal part: feldspar's Al-avoidance activities
+    (Holland and Powell 2003) and the fluid's p_i (1 - p_H2O) activities are not the exact derivative of
+    one entropy, so only their excess terms are held to this.
     """
     s = SOLUTIONS[name]
     pt, ph = next((pt, ph) for pt, ph in CASES if ph["name"] == name) if any(ph["name"] == name for _, ph in CASES) \
@@ -44,7 +51,7 @@ def test_mu_is_derivative_of_g(name):
     n0 = np.array(ph["frac"])
     mu = s.mu(n0, t, p)
 
-    if name == "fsp":
+    if name in ("fsp", "fl"):
         mu = s.mu_excess(n0, t, p)
 
         def total(n):

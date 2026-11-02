@@ -487,5 +487,108 @@ CHLORITE = HPSolution(
                19.0]),
 )
 
+
+# ---- silicate liquid (Holland, Green and Powell 2018; igneous set as in MAGEMin) -------------------------
+# The "site fractions" are the model's mixing units: the end-member fractions themselves, the sums
+# sumT = 1 - p(h2o) and sumM = p(sl) + p(wo) + 4 p(fo) + 4 p(fa), and the M-site cations mgM = 4 p(fo),
+# feM = 4 p(fa), CaM = p(wo), AlM = p(sl); water mixes as hydroxyl (xh = p(h2o)) against xv = 1 - p(h2o).
+_LIQ_NAMES = ("q4L", "slL", "wo1L", "fo2L", "fa2L", "jdL", "hmL", "ekL", "tiL", "kjL", "ctL", "h2o1L")
+_LIQ_P = {"q4L": "pq", "slL": "psl", "wo1L": "pwo", "jdL": "pjd", "hmL": "phm", "ekL": "pek", "tiL": "pti",
+          "kjL": "pkj", "ctL": "pct"}
+
+
+def _liq_occ(name):
+    occ = {"sumT": 1.0, "xv": 1.0} if name != "h2o1L" else {"xh": 1.0}
+    if name in _LIQ_P:
+        occ[_LIQ_P[name]] = 1.0
+    if name in ("fo2L", "fa2L"):
+        occ["pol"] = 1.0
+        occ["mgM" if name == "fo2L" else "feM"] = 4.0
+        occ["sumM"] = 4.0
+    if name in ("slL", "wo1L"):
+        occ["sumM"] = 1.0
+        occ["AlM" if name == "slL" else "CaM"] = 1.0
+    return occ
+
+
+def _liq_act(name):
+    tail = dict(sumT=-1, xv=2)
+    if name == "h2o1L":
+        return A(xh=2)
+    if name == "slL":
+        return A(AlM=1, psl=1, sumM=-1, **tail)
+    if name == "wo1L":
+        return A(CaM=1, pwo=1, sumM=-1, **tail)
+    if name == "fo2L":
+        return A(mgM=4, pol=1, sumM=-4, **tail)
+    if name == "fa2L":
+        return A(feM=4, pol=1, sumM=-4, **tail)
+    return A(**{_LIQ_P[name]: 1}, **tail)
+
+
+LIQUID = HPSolution(
+    "liq",
+    (em("q4L", (4, "qL"), dqf=(1.57, 0.0, -0.031)),
+     em("slL", (1, "silL"), dqf=(7.07, 0.0, -0.334)),
+     em("wo1L", (1, "woL"), dqf=(0.65, 0.0, -0.130)),
+     em("fo2L", (2, "foL"), dqf=(7.74, 0.0, -0.156)),
+     em("fa2L", (2, "faL"), dqf=(13.85, 0.0, -0.054)),
+     em("jdL", (1, "abL"), (-1, "qL"), dqf=(11.31, 0.0, -0.092)),
+     em("hmL", (0.5, "hemL"), dqf=(2.93, 0.0, -0.041)),
+     em("ekL", (0.5, "eskL"), dqf=(25.02, 0.0, 0.244)),
+     em("tiL", (1, "ruL"), dqf=(-6.24, 0.0, -0.235)),
+     em("kjL", (1, "kspL"), (-1, "qL"), dqf=(11.69, 0.0, -0.202)),
+     em("ctL", (-1, "qL"), (1, "silL"), (1, "woL"), dqf=(-106.16, 0.055, 0.052)),
+     em("h2o1L", (1, "h2oL"), dqf=(3.59, -0.0041, 0.00065))),
+    ("pq", "psl", "pwo", "pjd", "phm", "pek", "pti", "pkj", "pct", "pol", "sumT", "mgM", "feM", "CaM", "AlM",
+     "sumM", "xh", "xv"),
+    {n: _liq_occ(n) for n in _LIQ_NAMES},
+    {n: _liq_act(n) for n in _LIQ_NAMES},
+    _pairs(12, [(9.2, 0.0, -0.08), -10.3, (-47.6, 0.0, -4.31), (-13.1, 0.0, -0.53), (-15.5, 0.0, -0.11), 20.0,
+                0.0, 24.1, (-20.1, 0.0, -0.05), (-14.2, 0.0, 0.03), (18.7, 0.0, -0.71),
+                (-28.5, 0.0, 0.83), (1.2, 0.0, 0.1), 2.5, (18.8, 0.0, 0.04), -5.0, 0.0, (16.2, 0.0, -0.04),
+                (6.9, 0.0, 0.1), 3.7, (24.3, 0.0, -0.94),
+                (25.9, 0.0, 0.07), 13.9, (0.1, 0.0, -0.03), 0.0, 0.0, 17.9, (-0.5, 0.0, 0.1), (9.6, 0.0, -0.04),
+                (53.2, 0.0, -1.1),
+                (17.9, 0.0, 0.03), (0.1, 0.0, 0.07), 0.0, 0.0, 9.0, (3.8, 0.0, 0.07), -7.6, (21.0, 0.0, -1.67),
+                (8.3, 0.0, -0.04), -30.0, 0.0, -4.1, (9.4, 0.0, 0.1), -6.1, (20.9, 0.0, -1.6),
+                (9.8, 0.0, 0.01), 0.0, (15.4, 0.0, 0.14), (-4.7, 0.0, 0.1), 6.8, (-10.1, 0.0, -0.06),
+                0.0, 0.0, (8.9, 0.0, 0.1), 0.0, (57.4, 0.0, -0.66),
+                0.0, 0.0, 0.0, (60.0, 0.0, -0.66),
+                (9.6, 0.0, 0.04), 0.0, (50.0, 0.0, -0.2),
+                -5.4, (2.0, 0.0, 0.06),
+                (8.9, 0.0, -0.03)]),
+    v=(100.0, 120.0, 140.0, 240.0, 100.0, 120.0, 100.0, 100.0, 100.0, 100.0, 100.0, 65.0),
+)
+
+# ---- aqueous fluid with dissolved silicate (Holland, Green and Powell 2018) ------------------------------
+_FL_NAMES = ("qfL", "slfL", "wofL", "fofL", "fafL", "jdfL", "hmfL", "ekfL", "tifL", "kjfL", "H2O")
+_FL_W = {9: (71.5, 0.0, -0.89), 18: (55.4, 0.0, -0.91), 26: (83.7, 0.0, -0.61), 33: (82.9, 0.0, -1.26),
+         39: (77.7, 0.0, -1.41), 44: (46.1, 0.0, -0.83), 48: (73.0, 0.0, -0.66), 51: (73.0, 0.0, -0.66),
+         53: (75.9, 0.0, -0.66), 54: (49.6, 0.0, -1.31)}
+FLUID = HPSolution(
+    "fl",
+    (em("qfL", (4, "qL"), dqf=(2.65, 0.0, -0.071)),
+     em("slfL", (1, "silL"), dqf=(6.29, 0.0, -0.386)),
+     em("wofL", (1, "woL"), dqf=(-0.2, 0.0, -0.161)),
+     em("fofL", (2, "foL"), dqf=(7.56, 0.0, -0.125)),
+     em("fafL", (2, "faL"), dqf=(15.54, 0.0, -0.103)),
+     em("jdfL", (1, "abL"), (-1, "qL"), dqf=(10.59, 0.0, -0.385)),
+     em("hmfL", (0.5, "hemL"), dqf=(4.05, 0.0, -0.077)),
+     em("ekfL", (0.5, "eskL"), dqf=(24.75, 0.0, 0.245)),
+     em("tifL", (1, "ruL"), dqf=(5.69, 0.0, -0.484)),
+     em("kjfL", (1, "kspL"), (-1, "qL"), dqf=(12.21, 0.0, -0.345)),
+     em("H2O", (1, "H2O"))),
+    ("pq", "psl", "pwo", "pfo", "pfa", "pjd", "phm", "pek", "pti", "pkj", "ph2o", "fac"),
+    {**{n: {s: 1.0, "fac": 1.0} for n, s in zip(_FL_NAMES[:10], ("pq", "psl", "pwo", "pfo", "pfa", "pjd", "phm",
+                                                                  "pek", "pti", "pkj"))},
+     "H2O": {"ph2o": 1.0}},
+    {**{n: A(**{s: 1, "fac": 1}) for n, s in zip(_FL_NAMES[:10], ("pq", "psl", "pwo", "pfo", "pfa", "pjd",
+                                                                   "phm", "pek", "pti", "pkj"))},
+     "H2O": A(ph2o=2)},
+    _pairs(11, [_FL_W.get(i, 0.0) for i in range(55)]),
+)
+
 SOLUTIONS = {s.name: s for s in (OLIVINE, FELDSPAR, SPINEL, ILMENITE, GARNET, BIOTITE, MUSCOVITE,
-                                    ORTHOPYROXENE, CLINOPYROXENE, AMPHIBOLE, CORDIERITE, EPIDOTE, CHLORITE)}
+                                    ORTHOPYROXENE, CLINOPYROXENE, AMPHIBOLE, CORDIERITE, EPIDOTE, CHLORITE,
+                                    LIQUID, FLUID)}
