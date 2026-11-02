@@ -192,7 +192,7 @@ def _app_name(hp: str, nums: dict, x: dict) -> str:
 
 
 def _wrap(r: Result, lf: float | None) -> HPResult:
-    t_c, p_bar = r.t - 273.15, r.p * 1000.0
+    t_c, p_bar = round(r.t - 273.15, 6), round(r.p * 1000.0, 6)
     liq_m = np.zeros(len(COMPONENTS))
     solids = []
     for ph in r.phases:
