@@ -7,17 +7,29 @@ const HINTS = {
     equilibrium: "The crystals stay with the melt and keep reacting with it (a closed system).",
     fractional: "The crystals are taken out at each step; the next step starts from the remaining melt.",
   },
+  example: {
+    fractional: "Stage 1 is batch melting of the mantle rock; stage 2 is fractional crystallization of its melt.",
+  },
   melt: {
     equilibrium: "Batch melting: the melt stays with the rock and keeps reacting with it. Starts at the solidus.",
     fractional: "The melt above 1% of the rock is taken out at each step and pooled; the residue keeps melting.",
   },
 };
-function hint() { $("mode-hint").textContent = HINTS[PROCESS][MODE]; }
+function hint() { $("mode-hint").textContent = HINTS[PROCESS][PROCESS === "example" ? "fractional" : MODE]; }
 function setProcess(p) {
   PROCESS = p;
   document.querySelectorAll("#process button").forEach((x) => x.classList.toggle("on", x.dataset.process === p));
   $("mode-eq").textContent = p === "melt" ? "Batch" : "Equilibrium";
-  $("start-legend").textContent = p === "melt" ? "Starting rock" : "Starting melt";
+  $("start-legend").textContent = p === "melt" ? "Starting rock" : p === "example" ? "Mantle rock" : "Starting melt";
+  const ex = p === "example";
+  $("example-box").style.display = ex ? "" : "none";
+  $("conditions-box").style.display = ex ? "none" : "";
+  $("mode").style.display = ex ? "none" : "";
+  if (ex) {
+    if (INFO.presets["KLB-1 peridotite"]) { $("preset").value = "KLB-1 peridotite"; fillPreset("KLB-1 peridotite"); }
+    hint();
+    return;
+  }
   const a = +$("t_start").value, b = +$("t_end").value;
   if ((p === "melt") === (a > b)) { $("t_start").value = b; $("t_end").value = a; }
   if (p === "melt" && INFO.presets["KLB-1 peridotite"] && $("preset").value !== "custom") {
@@ -51,7 +63,13 @@ function inputs() {
   const b = $("buffer").value, off = parseFloat($("offset").value) || 0;
   const fo2 = b === "closed" ? "closed" : off ? `${b}${off > 0 ? "+" : ""}${off}` : b;
   const phases = [...document.querySelectorAll("#phases .chip.on")].map((c) => c.dataset.name);
-  const name = $("preset").value === "custom" ? (PROCESS === "melt" ? "Custom rock" : "Custom melt") : $("preset").value;
+  const name = $("preset").value === "custom" ? (PROCESS === "crystallize" ? "Custom melt" : "Custom rock") : $("preset").value;
+  if (PROCESS === "example") {
+    const v = (id) => +$(`ex-${id}`).value;
+    return { name, bulk, process: "example", mode: "fractional", phases, t_start: v("t_source"), t_end: v("t_end"),
+      step: v("step"), p_bar: v("p_crust"), fo2: $("ex-fo2").value,
+      example: { t_source: v("t_source"), p_source: v("p_source"), h2o: v("h2o"), fo2_source: "QFM" } };
+  }
   return { name, bulk, t_start: +$("t_start").value, t_end: +$("t_end").value, step: +$("step").value,
     p_bar: +$("p_bar").value, fo2, mode: MODE, process: PROCESS, phases };
 }
@@ -72,7 +90,7 @@ function show(st) {
   $("prog").max = n || 1; $("prog").value = k;
   const last = st.steps.length ? st.steps[st.steps.length - 1] : null;
   const msg = {
-    idle: "", running: `Running: step ${k} of ${n}${last ? `, ${last.t.toFixed(0)} C` : ""}`,
+    idle: "", running: st.message || `Running: step ${k} of ${n}${last ? `, ${last.t.toFixed(0)} C` : ""}`,
     done: `Done: ${st.steps.length} steps. The results window has the plots.`,
     stopped: `Stopped after ${st.steps.length} steps.`, error: "",
   }[st.status];

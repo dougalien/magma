@@ -123,7 +123,7 @@ class EquilibriumResult:
 class Equilibrator:
     """Equilibrium of one bulk composition (oxide wt%, i.e. grams per 100 g) at T, P, fO2."""
 
-    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "rhombohedral", "garnet", "water")):
+    def __init__(self, bulk: Composition, fo2="QFM", phases=("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "titanomagnetite", "rhombohedral", "garnet", "water")):
         """fo2: a buffer ("QFM+1"), a log10 value, or None for a system closed to oxygen."""
         b = bulk.with_fe3_ratio(0.0)                     # carry iron as total FeO
         self.bulk_fe2o3 = bulk.moles().get("Fe2O3", 0.0)  # used when fo2 is None (closed to oxygen)
@@ -138,6 +138,10 @@ class Equilibrator:
             if hasattr(ph, "restricted"):        # end members that need a missing oxide cannot form
                 ph = ph.restricted([e for e in ph.end_members if set(OXIDES_OF[e]) & absent])
             self.phases.append(ph)
+        # without Cr2O3 the spinel is already the Cr-free model: one copy is enough
+        names = [ph.name for ph in self.phases]
+        if "spinel" in names and "titanomagnetite" in names and "chromite" in self.phases[names.index("spinel")].inactive:
+            self.phases = [ph for ph in self.phases if ph.name != "titanomagnetite"]
 
     # ---- liquid ------------------------------------------------------------------------------
     def _liquid(self, solid_oxides: dict[str, float], t_c, p) -> Composition:
@@ -279,7 +283,10 @@ class Equilibrator:
             ph = next(p for p in absent if p.name == best[0])
             x = best[1][1]
             trial = present + [ph]
-            for amount in (1e-3, 1e-2, 3e-2):   # moles of the new phase to start from
+            # moles of the new phase to start from; the small amounts are for a phase whose most
+            # stable composition is rich in a scarce oxide (Cr-spinel from a melt with 0.04% Cr2O3),
+            # where even 1e-3 mol would take more of that oxide than the system has
+            for amount in (1e-3, 1e-2, 3e-2, 1e-4, 1e-5):
                 tguess = np.concatenate([guess, ph.params_from(x, amount)])
                 sol, tn, tlayout, tsolid = self._solve(trial, t_c, p_bar, tguess)
                 if sol.success:

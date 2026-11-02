@@ -20,7 +20,9 @@ from urllib.parse import urlparse
 from .. import __version__
 import numpy as np
 
+from ..classify import BOWEN_CONTINUOUS, BOWEN_DISCONTINUOUS, BOWEN_LATE, TAS_FIELDS, TAS_LINES, magma_type, tas_name, tas_point
 from ..composition import OXIDES, PRESETS, Composition
+from ..differentiation import DEFAULTS as EXAMPLE_DEFAULTS, iter_differentiate, melt_source
 from ..melting import iter_melt
 from ..path import iter_crystallize
 from ..thermo.phases import PHASES
@@ -30,16 +32,23 @@ PAGES = {"/": "control.html", "/control": "control.html", "/results": "results.h
 DEFAULT_PORT = 8766            # Reaction uses its own port; both apps can run at once
 MAX_BODY = 200_000
 PHASE_LABEL = {"olivine": "Olivine", "feldspar": "Plagioclase", "clinopyroxene": "Augite", "pigeonite": "Pigeonite", "orthopyroxene": "Orthopyroxene",
-               "spinel": "Spinel", "rhombohedral": "Ilmenite", "garnet": "Garnet",
+               "spinel": "Spinel", "titanomagnetite": "Titanomagnetite", "rhombohedral": "Ilmenite", "garnet": "Garnet",
                "water": "Water (fluid)"}
 
 NOTES = [
     "Liquid: Ghiorso and Sack (1995) regular-solution model, with the parameter values used in MELTS.",
     "Solids: olivine, plagioclase (Elkins and Grove 1990), augite, pigeonite and orthopyroxene (the "
     "MELTS pyroxene model of Sack and Ghiorso 1994; augite and pigeonite are two copies of one model, as "
-    "in MELTS, and pigeonite is left out above 15 kbar), spinel (Cr-spinel to titanomagnetite, Sack and "
-    "Ghiorso 1991), ilmenite (Ghiorso and Evans 2008) and garnet (Berman 1990). Equilibrium paths end "
-    "near the solidus.",
+    "in MELTS, and pigeonite is left out above 15 kbar), spinel and titanomagnetite (two copies of the "
+    "spinel model of Sack and Ghiorso 1991, the second without chromite, as MELTS allows two spinels), "
+    "ilmenite (Ghiorso and Evans 2008) and garnet (Berman 1990). Equilibrium paths end near the solidus.",
+    "Not in the model yet: amphibole, biotite, K-feldspar, muscovite and the silica minerals (quartz, "
+    "tridymite). They are the late part of Bowen's series, so evolved melts (andesite and beyond) are "
+    "only roughly right, and a melt that would grow them goes on without them.",
+    "Magma types: by SiO2 (basalt 45-52, basaltic andesite 52-57, andesite 57-63, dacite 63-69, rhyolite "
+    "above 69 wt%), and the TAS name of Le Bas et al. (1986) from SiO2 and Na2O + K2O, volatile-free. "
+    "As in MELTS, the liquid holds sodium too well, so evolved melts plot high in alkalis (the trachy- "
+    "fields of TAS) where real ones are andesite or dacite.",
     "Iron: Fe3+/Fe2+ of the liquid from Kress and Carmichael (1991) at the chosen oxygen buffer "
     "(Frost 1991), or fixed by the starting Fe2O3 when the system is closed to oxygen.",
     "MnO, NiO, CoO and CO2 are not part of the liquid model and are left out of the calculation.",
@@ -77,12 +86,14 @@ class State:
         self.inputs: dict = {}
         self.steps: list[dict] = []
         self.run_id = 0
+        self.source: dict | None = None
         self._stop = threading.Event()
 
     def snapshot(self) -> dict:
         return {"version": self.version, "status": self.status, "message": self.message,
                 "progress": self.progress, "inputs": self.inputs, "steps": self.steps,
-                "run_id": self.run_id, "notes": NOTES, "app_version": __version__}
+                "run_id": self.run_id, "notes": NOTES, "app_version": __version__,
+                "source": self.source}
 
     def changed(self):
         with self.cond:
@@ -94,6 +105,7 @@ class State:
         if self.status == "running":
             raise ValueError("a run is already going; stop it first")
         bulk, kw = parse_inputs(inputs)
+        self.source = None
         self._stop.clear()
         self.run_id += 1
         self.inputs = inputs
@@ -112,6 +124,8 @@ class State:
         try:
             if kw["process"] == "melt":
                 return self._run_melt(bulk, kw)
+            if kw["process"] == "example":
+                return self._run_example(bulk, kw)
             kw = {k: v for k, v in kw.items() if k != "process"}
             for r in iter_crystallize(bulk, **kw):
                 step = step_json(r)
@@ -175,6 +189,50 @@ class State:
         self.changed()
 
 
+    def _run_example(self, rock: Composition, kw: dict) -> None:
+        """Mantle to magma: batch-melt the rock at the source, then cool the melt fractionally."""
+        try:
+            self.message = (f"Melting the mantle at {kw['t_source']:.0f} °C and {kw['p_source'] / 1000:g} kbar "
+                            "(this takes a minute or two)...")
+            self.changed()
+            src = melt_source(rock, kw["t_source"], kw["p_source"], fo2=kw["fo2_source"], phases=kw["phases"])
+            if self._stop.is_set():
+                raise _Stopped()
+            sj = step_json(src.result)
+            sj["primary"] = {ox: src.primary.get(ox) for ox in OXIDES if src.primary.get(ox) > 0}
+            sj["primary_mg"] = src.primary.mg_number
+            self.source = sj
+            self.message = ""
+            self.changed()
+            removed: dict[str, float] = {}
+            for r in iter_differentiate(src.primary, kw["t_source"], kw["t_end"], kw["step"], kw["p_bar"],
+                                        kw["h2o"], kw["fo2"], kw["phases"]):
+                step = step_json(r)
+                for s in step["solids"]:
+                    removed[s["name"]] = removed.get(s["name"], 0.0) + s["grams"]
+                    s["step_grams"] = s["grams"]
+                    s["grams"] = removed[s["name"]]
+                for name, g in removed.items():
+                    if not any(s["name"] == name for s in step["solids"]):
+                        step["solids"].append({"name": name, "label": PHASE_LABEL.get(name, name),
+                                               "grams": g, "step_grams": 0.0, "x": {}, "numbers": {},
+                                               "formula": ""})
+                self.steps.append(step)
+                self.progress = [len(self.steps), self.progress[1]]
+                self.changed()
+                if self._stop.is_set():
+                    raise _Stopped()
+            self.status = "done"
+            if self.steps and self.steps[-1]["t"] > kw["t_end"] + 1e-6:
+                self.message = (f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is nearly gone, which Magma "
+                                "cannot follow further yet.")
+        except _Stopped:
+            self.status, self.message = "stopped", "Stopped."
+        except Exception as exc:
+            self.status, self.message = "error", f"{type(exc).__name__}: {exc}"
+        self.changed()
+
+
 class _Stopped(Exception):
     pass
 
@@ -204,8 +262,22 @@ def parse_inputs(d: dict) -> tuple[Composition, dict]:
               process=d.get("process", "crystallize"))
     if kw["mode"] not in ("equilibrium", "fractional"):
         raise ValueError("mode must be equilibrium or fractional")
-    if kw["process"] not in ("crystallize", "melt"):
-        raise ValueError("process must be crystallize or melt")
+    if kw["process"] not in ("crystallize", "melt", "example"):
+        raise ValueError("process must be crystallize, melt or example")
+    if kw["process"] == "example":
+        ex = d.get("example") or {}
+        num = lambda k: float(ex.get(k, EXAMPLE_DEFAULTS[k]))
+        kw.update(t_source=num("t_source"), p_source=num("p_source"), h2o=num("h2o"),
+                  fo2_source=_fo2_arg(ex.get("fo2_source", "QFM")), mode="fractional")
+        kw["t_start"] = kw["t_source"]
+        if not 1100 <= kw["t_source"] <= 1700:
+            raise ValueError("the melting temperature must be between 1100 and 1700 C")
+        if not 1 <= kw["p_source"] <= 30000:
+            raise ValueError("the melting pressure must be between 1 and 30000 bar")
+        if not 0 <= kw["h2o"] <= 10:
+            raise ValueError("the water added must be between 0 and 10 wt%")
+        if not 600 <= kw["t_end"] < kw["t_source"]:
+            raise ValueError("the melt must cool to between 600 C and the melting temperature")
     if kw["process"] == "crystallize" and not 600 <= kw["t_end"] <= kw["t_start"] <= 2000:
         raise ValueError("cooling: temperatures must run downward, between 600 and 2000 C")
     if kw["process"] == "melt" and not 600 <= kw["t_start"] <= kw["t_end"] <= 2000:
@@ -232,7 +304,7 @@ def _numbers(name: str, x: dict) -> dict:
         return {"Wo": 100 * ca / (ca + mg + fe), "Mg#": 100 * mg / (mg + fe)}
     if name == "rhombohedral":
         return {"Ilm": 100 * x.get("ilmenite", 0), "Hem": 100 * x.get("hematite", 0)}
-    if name == "spinel":
+    if name in ("spinel", "titanomagnetite"):
         cr, hc, mt, sp, usp = (x.get(e, 0) for e in PHASES[name].end_members)
         mg, fe2, al, crr = sp, hc + cr + mt + 2 * usp, 2 * (hc + sp), 2 * cr
         out = {"Usp": 100 * usp, "Mg#": 100 * mg / (mg + fe2) if mg + fe2 > 0 else 0.0}
@@ -248,10 +320,12 @@ def step_json(r) -> dict:
         "t": r.t_c, "p": r.p_bar, "melt_pct": 100 * r.melt_fraction, "liquid_grams": r.liquid_grams,
         "liquid": {ox: liq.get(ox) for ox in OXIDES if liq.get(ox) > 0},
         "mg_number": liq.mg_number,
+        "magma_type": magma_type(liq), "tas": tas_name(liq), "tas_xy": tas_point(liq),
         "solids": [{"name": s.name, "label": PHASE_LABEL.get(s.name, s.name), "grams": s.grams,
                     "x": s.x, "numbers": _numbers(s.name, s.x),
                     "formula": PHASES[s.name].formula(np.array(list(s.x.values())))} for s in r.solids],
-        "affinities": r.affinities,
+        # JSON has no infinity: a phase that cannot form at all (its affinity is -inf) is sent as null
+        "affinities": {k: (float(v) if np.isfinite(v) else None) for k, v in r.affinities.items()},
     }
 
 
@@ -311,7 +385,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"oxides": [o for o in OXIDES if o != "CO2"],
                                "presets": {k: {"wt": c.wt, "source": c.source, "name": c.name}
                                            for k, c in PRESETS.items()},
-                               "phases": [{"name": n, "label": PHASE_LABEL.get(n, n)} for n in PHASES]})
+                               "phases": [{"name": n, "label": PHASE_LABEL.get(n, n)} for n in PHASES],
+                               "tas": {"fields": TAS_FIELDS, "lines": TAS_LINES},
+                               "bowen": {"discontinuous": BOWEN_DISCONTINUOUS, "continuous": BOWEN_CONTINUOUS,
+                                         "late": BOWEN_LATE},
+                               "example": EXAMPLE_DEFAULTS})
         if path == "/events":
             return self._events()
         return self._error(404, "not found")

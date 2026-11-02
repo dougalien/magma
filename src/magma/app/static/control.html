@@ -29,7 +29,33 @@
         <div class="row sumline small"><span>Total <b id="total">0</b> wt%</span><span class="hint">Values are normalized to 100. Give iron as FeO and Fe2O3, or all as FeO.</span></div>
       </fieldset>
       <div style="display:flex;flex-direction:column;gap:14px">
-        <fieldset class="group">
+        <fieldset class="group" id="example-box" style="display:none">
+          <legend>Mantle to magma</legend>
+          <p class="hint" style="margin:0 0 8px">Two stages. First the mantle rock partly melts at the source (batch melting): that melt is
+            the primary basalt. Then the melt rises to the crust and cools, and the crystals are taken out as they form
+            (fractional crystallization). Watch the order of the minerals (Bowen's reaction series) and the melt
+            change from basalt toward andesite and beyond.</p>
+          <h3 style="margin:4px 0 6px">1. Melting the mantle</h3>
+          <div class="grid2">
+            <label class="f">Melting temperature, C<input id="ex-t_source" type="number" value="1380"></label>
+            <label class="f">Pressure, bar<input id="ex-p_source" type="number" value="10000" min="1"></label>
+          </div>
+          <div class="hint" style="margin-top:4px">KLB-1 at 10 kbar: 1380 C gives about 11% melt; hotter means more melt, richer in MgO.</div>
+          <h3 style="margin:10px 0 6px">2. Cooling the melt in the crust</h3>
+          <div class="grid2">
+            <label class="f">Pressure, bar<input id="ex-p_crust" type="number" value="2000" min="1"></label>
+            <label class="f">Water added, wt%<input id="ex-h2o" type="number" value="2" min="0" step="0.5"></label>
+            <label class="f">Cool to, C<input id="ex-t_end" type="number" value="700"></label>
+            <label class="f">Step, C<input id="ex-step" type="number" value="10" min="1"></label>
+          </div>
+          <label class="f" style="margin-top:8px">Oxygen<select id="ex-fo2">
+            <option value="NNO">NNO buffer (as in arc magmas)</option><option value="QFM">QFM buffer (as in mid-ocean ridge basalt)</option>
+            <option value="NNO+1">NNO + 1</option></select></label>
+          <div class="hint" style="margin-top:6px">The mantle rock is dry. Water stands for a wet source, as above a subduction
+            zone; with water and NNO the melt grows magnetite early and climbs in silica. Try 0% and QFM to see the
+            iron-rich (tholeiitic) path instead.</div>
+        </fieldset>
+        <fieldset class="group" id="conditions-box">
           <legend>Conditions</legend>
           <div class="grid3">
             <label class="f">Start, C<input id="t_start" type="number" value="1250"></label>
@@ -48,7 +74,7 @@
         <fieldset class="group">
           <legend>Process</legend>
           <div class="seg" id="process" role="group" aria-label="Process" style="margin-bottom:8px">
-            <button data-process="crystallize" class="on">Cool a melt</button><button data-process="melt">Heat a rock</button>
+            <button data-process="crystallize" class="on">Cool a melt</button><button data-process="melt">Heat a rock</button><button data-process="example" title="Melt the mantle, then cool the melt: Bowen's series and the magma types">Mantle to magma</button>
           </div>
           <div class="seg" id="mode" role="group" aria-label="Mode">
             <button data-mode="equilibrium" class="on" id="mode-eq">Equilibrium</button><button data-mode="fractional">Fractional</button>

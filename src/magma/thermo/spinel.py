@@ -198,13 +198,15 @@ def end_member_g(t, p) -> np.ndarray:
 
 
 class Spinel:
-    name = "spinel"
     end_members = END_MEMBERS
 
-    def __init__(self, inactive=()):
+    def __init__(self, inactive=(), name="spinel", always_inactive=()):
         """inactive: end members that cannot form (an oxide missing from the system); their
-        fraction is held at zero and their equilibrium condition dropped."""
-        self.inactive = tuple(inactive)
+        fraction is held at zero and their equilibrium condition dropped.  always_inactive: end
+        members this copy of the model never takes (the Cr-free titanomagnetite copy)."""
+        self.name = name
+        self.always_inactive = tuple(always_inactive)
+        self.inactive = tuple(dict.fromkeys(tuple(inactive) + self.always_inactive))
         self.active = np.array([e not in self.inactive for e in END_MEMBERS])
         self._free = [k for k in range(4) if self.active[END_MEMBERS.index(("spinel", "chromite",
                                                                             "ulvospinel", "magnetite")[k])]]
@@ -212,7 +214,7 @@ class Spinel:
 
     def restricted(self, inactive):
         inactive = [e for e in inactive if e in END_MEMBERS and e != "hercynite"]
-        return Spinel(inactive) if inactive else self
+        return Spinel(inactive, self.name, self.always_inactive) if inactive else self
 
     def g0(self, t, p) -> np.ndarray:
         return np.array([MINERALS[e].gibbs(t, p) for e in END_MEMBERS])
@@ -300,3 +302,7 @@ _STARTS = [np.array(v, float) for v in (
 )]
 
 SPINEL = Spinel()
+# A second copy without chromite, as MELTS allows two spinels: Cr-spinel and titanomagnetite are
+# separated by a solvus, and the Cr-spinel copy alone stays on its Cr-rich minimum (so little of it
+# can form from a melt with a few hundred ppm Cr) while a ferrobasalt is saturated in magnetite.
+TITANOMAGNETITE = Spinel(name="titanomagnetite", always_inactive=("chromite",))

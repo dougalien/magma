@@ -40,7 +40,7 @@ class LinePlot {
     const m = { l: 70, r: 18, t: 12, b: 46 };
     const pw = w - m.l - m.r, ph = hgt - m.t - m.b;
     const xs = [x, ...series.map((s) => s.x || [])].flat().filter((v) => v !== null && isFinite(v));
-    const x0 = Math.min(...xs), x1 = Math.max(...xs);
+    const x0 = opts.xRange ? opts.xRange[0] : Math.min(...xs), x1 = opts.xRange ? opts.xRange[1] : Math.max(...xs);
 
     let ys = [];
     const keep = (v) => { if (v !== null && isFinite(v) && (!opts.log || v > 0)) ys.push(v); };
@@ -56,6 +56,9 @@ class LinePlot {
       yticks = [];
       const stride = Math.ceil((e1 - e0) / 8);
       for (let e = e0; e <= e1; e += stride) yticks.push(Math.pow(10, e));
+    } else if (opts.yRange) {
+      [y0, y1] = opts.yRange;
+      yticks = LinePlot.niceTicks(y0, y1);
     } else {
       if (y0 >= 0 && y0 < 0.35 * y1) y0 = 0;
       if (y1 - y0 <= 1e-9 * Math.max(Math.abs(y1), 1)) { y1 += 1; y0 -= 1; }   // flat line (or equal to rounding)
@@ -131,6 +134,16 @@ class LinePlot {
       g += `<path d="${path}" fill="none" style="stroke:${stroke}" stroke-width="${s.dash ? 1.7 : 3.2}" ` +
         `stroke-linejoin="round" stroke-linecap="round"${s.dash ? ` stroke-dasharray="${s.dash}"` : ""}/>`;
     });
+    // text labels placed in data coordinates (field names on a classification diagram)
+    (opts.labels || []).forEach((t) => {
+      if (t.x < x0 || t.x > x1 || t.y < y0 || t.y > y1) return;
+      g += `<text class="fieldlabel" x="${f(sx(t.x))}" y="${f(sy(t.y))}" text-anchor="middle">${t.text}</text>`;
+    });
+    // markers with a short label (the steps where the magma type changes)
+    (opts.marks || []).forEach((t) => {
+      g += `<circle cx="${f(sx(t.x))}" cy="${f(sy(t.y))}" r="4.5" style="fill:${t.color || "var(--ink)"};stroke:var(--bg)" stroke-width="1.5"/>`;
+      if (t.text) g += `<text class="marklabel" x="${f(sx(t.x) + 7)}" y="${f(sy(t.y) - 7)}">${t.text}</text>`;
+    });
     this.svgHost.innerHTML =
       `<svg viewBox="0 0 ${w} ${hgt}" width="${w}" height="${hgt}" xmlns="http://www.w3.org/2000/svg" role="img" ` +
       `aria-label="${(opts.title || "Plot").replace(/"/g, "")}">` +
@@ -159,6 +172,7 @@ class LinePlot {
       html += `<div class="muted">thermodynamics: ${opts.strip[best] === "poor" ? "unreliable" : "approximate"}</div>`;
     }
     series.forEach((s) => {
+      if (s.noHover) return;
       let k = best;
       if (s.x) {          // its own grid: the point nearest the cursor's x
         let d = Infinity;

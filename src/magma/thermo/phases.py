@@ -190,8 +190,8 @@ OLIVINE = SolutionPhase("olivine", ("forsterite", "fayalite"), g_ex_olivine, sit
 FELDSPAR = SolutionPhase("feldspar", ("albite", "anorthite", "sanidine"), g_ex_feldspar)
 GARNET = SolutionPhase("garnet", ("almandine", "grossular", "pyrope"), g_ex_garnet, sites=3.0)
 from .pyroxene import CLINOPYROXENE, ORTHOPYROXENE, PIGEONITE   # noqa: E402
-from .spinel import SPINEL                               # noqa: E402
+from .spinel import SPINEL, TITANOMAGNETITE              # noqa: E402
 from .rhombohedral import RHOMBOHEDRAL                   # noqa: E402
 from .water_fluid import WATER_FLUID                     # noqa: E402
 
-PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE, PIGEONITE, ORTHOPYROXENE, SPINEL, RHOMBOHEDRAL, GARNET, WATER_FLUID)}
+PHASES = {p.name: p for p in (OLIVINE, FELDSPAR, CLINOPYROXENE, PIGEONITE, ORTHOPYROXENE, SPINEL, TITANOMAGNETITE, RHOMBOHEDRAL, GARNET, WATER_FLUID)}

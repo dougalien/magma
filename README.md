@@ -41,6 +41,8 @@ Milestones 1 and 2 are under way.  Working now, for anhydrous to slightly hydrou
 - `magma.equilibrium`: liquid + solids at one T, P and fO2 (or closed to oxygen), adding and
   dropping phases by their affinities, as MELTS does.
 - `magma.path`: equilibrium or fractional crystallization along a cooling path.
+- `magma.differentiation`, `magma.classify`: mantle to magma (melting, then fractional
+  crystallization), with magma-type and TAS names; see below.
 - `magma.melting`: partial melting of a rock on heating, batch (equilibrium; computed by cooling the
   rock's composition from above its liquidus and reported from low to high T) or fractional (melt
   above 1% of the residue removed at each step and pooled).
@@ -87,6 +89,45 @@ the same rock exhausts cpx near 1415 C, after which melting nearly stops (about 
 by 1450 C).  The lowest-degree melts are far too rich in Na2O (9-11 wt%), the same failing as MELTS
 (the reason pMELTS exists).  Garnet is not in the model, so keep peridotite below about 2 GPa.
 The KLB-1 composition was entered from memory and should be checked against Davis et al. (2009).
+
+## From mantle to magma: Bowen's series
+
+`magma.differentiation` (and "Mantle to magma" in the app) runs the textbook story in two stages.
+Stage 1 batch-melts KLB-1 at the source (default 1380 C, 10 kbar: about 10% melt, a picritic basalt
+with 46 wt% SiO2 and 14 wt% MgO).  Stage 2 takes that melt to the crust (default 2 kbar), adds water
+(default 2 wt%, standing for a wet source above a subduction zone; KLB-1 itself is dry), and cools it
+at the NNO buffer with fractional crystallization.  `magma.classify` names the melt at every step:
+magma type by SiO2 (basalt, basaltic andesite, andesite, dacite, rhyolite) and its TAS field
+(Le Bas et al. 1986).
+
+```python
+from magma.differentiation import melt_source, iter_differentiate, magma_type_stages
+src = melt_source()                                   # KLB-1, 1380 C, 10 kbar
+steps = list(iter_differentiate(src.primary, 1380, 900, step=10, p_crust=2000, h2o=2.0, fo2="NNO"))
+for s in magma_type_stages(steps):
+    print(s.t, s.magma_type, round(s.melt_grams, 1), s.tas)
+```
+
+With the defaults the minerals come in Bowen's order: olivine from about 1290 C, augite with Cr-spinel
+near 1170 C, titanomagnetite at 1130 C, plagioclase near 1050 C (An falling as it cools) and
+orthopyroxene near 930 C.  The melt is a basalt until about 1030 C (37 g left of 100 g), a basaltic
+andesite to 950 C, and an andesite by silica (about 60 wt% SiO2) at 900 C with 20 g of melt left.
+Dry and at QFM the same melt instead follows the iron-enrichment (Fenner, tholeiitic) trend: plagioclase
+comes in at 1220 C, no magnetite forms, and the melt gets poorer in silica.
+
+Where the model runs out: amphibole, biotite, K-feldspar, muscovite and quartz are not in Magma yet,
+so the lower half of Bowen's series cannot form, and these are what drive a wet andesite on to dacite
+and rhyolite.  The liquid also holds sodium too well (as MELTS does), so the evolved melts carry
+9-11 wt% Na2O + K2O and plot in the trachyandesite and trachyte fields of TAS; the app names the type by
+silica and says so.  To reach rhyolite properly the model needs amphibole and biotite (Ghiorso and
+Evans-style or the MELTS hornblende/biotite models), a separate alkali feldspar, quartz/tridymite, and
+ideally the rhyolite-MELTS liquid recalibration (Gualda et al. 2012).
+
+Two fixes came with this: a spinel whose most stable composition is rich in a scarce oxide (Cr-spinel
+from a melt with a few hundred ppm Cr2O3) could not be added even when oversaturated, because the
+solver's first trial amount needed more Cr2O3 than the system had; and the spinel model now has a
+second, chromite-free copy ("titanomagnetite"), as MELTS allows two spinels, since the Cr-spinel copy
+stays on its Cr-rich side of the solvus.  Without Cr2O3 in the system only one copy is used.
 
 Next: hydrous minerals (amphibole, biotite), quartz and the other silica phases, and speed.
 

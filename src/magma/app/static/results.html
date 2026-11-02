@@ -37,17 +37,19 @@
       </div>
       <h3 style="margin:12px 0 6px">Here is what we found</h3>
       <div id="story" class="story"></div>
+      <div id="types" class="types"></div>
       <details style="margin-top:8px"><summary>Assumptions and limits</summary><ul id="notes"></ul></details>
     </section>
     <section class="panel">
       <div class="row" style="justify-content:space-between;margin-bottom:8px">
         <div class="seg" id="view" role="group" aria-label="What to plot">
-          <button data-view="mass" class="on">Crystals and melt</button><button data-view="liquid">Melt composition</button><button data-view="minerals">Mineral compositions</button>
+          <button data-view="mass" class="on">Crystals and melt</button><button data-view="liquid">Melt composition</button><button data-view="minerals">Mineral compositions</button><button data-view="tas">Magma types</button><button data-view="bowen">Bowen's series</button>
         </div>
         <span id="axisnote" class="hint"></span>
       </div>
       <div id="legend" class="legend"></div>
       <div id="plot" class="plotwrap"></div>
+      <div id="bowen" style="display:none"></div>
     </section>
     <section class="panel">
       <h2 style="margin-bottom:8px">Step by step</h2>
