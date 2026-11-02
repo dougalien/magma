@@ -32,6 +32,7 @@ PURE_PHASES = ("q", "crst", "trd", "coe", "stv", "ky", "sill", "and", "ru", "sph
 SOLUTION_PHASES = ("liq", "fl", "ol", "opx", "cpx", "g", "spl", "ilm", "fsp", "amp", "bi", "mu", "cd", "ep", "chl")
 MELT_MIN_T = 773.15          # K; no liquid below this (as in MAGEMin)
 SF_MIN = 1e-10
+TRACE = 2e-5                 # mole fraction below which a component is left out
 
 
 @dataclass
@@ -161,6 +162,9 @@ def equilibrate(bulk, t_k: float, p_kbar: float, phases=None, max_iter: int = 12
     force does the full search run, starting from its compositions.
     """
     bulk = np.asarray(bulk, float).copy()
+    # a component below TRACE of the bulk (a few ppm) is dropped: the starting columns of a solution
+    # always carry some of each of their components, so a trace one would make mass balance impossible
+    bulk[bulk < TRACE * bulk[bulk > 0].sum()] = 0.0
     present = bulk > 1e-10
     io = COMPONENTS.index("O")
     if log_fo2 is not None:
@@ -214,10 +218,15 @@ def equilibrate(bulk, t_k: float, p_kbar: float, phases=None, max_iter: int = 12
         fast = _from_previous(previous, reduced, cols, bulk, present, o2_col, t_k, p_kbar, tol, rng)
         if fast is not None:
             phases_out, gamma, bulk_out, worst = fast
+            phases_out = _merge_twins(phases_out)
             total_g = float(sum(ph.amount * ph.g for ph in phases_out))
             if verbose:
                 print(f"previous assemblage holds: worst={worst:.2e}")
             return Result(t_k, p_kbar, bulk_out, phases_out, gamma, total_g, 0, True, worst)
+        # the old assemblage could not be carried over: search from scratch.  (Seeding the search with
+        # the old melt can stall it: in fractional crystallization that melt column equals the bulk.)
+        return equilibrate(bulk, t_k, p_kbar, phases=phases, max_iter=max_iter, tol=tol, seed=seed,
+                           verbose=verbose, log_fo2=log_fo2, previous=None)
 
     b = bulk[present]
     gamma = np.zeros(len(COMPONENTS))
@@ -289,6 +298,7 @@ def equilibrate(bulk, t_k: float, p_kbar: float, phases=None, max_iter: int = 12
     if final is None or not converged or worst < -tol:
         final = _finish(cols, lp.x, o2_col, reduced, bulk, gamma, t_k, p_kbar, polish_ok=True)
     phases_out, gamma, bulk = final
+    phases_out = _merge_twins(phases_out)
     total_g = float(sum(ph.amount * ph.g for ph in phases_out))
     return Result(t_k, p_kbar, bulk, phases_out, gamma, total_g, it, converged, worst)
 
@@ -313,11 +323,26 @@ def _from_previous(previous, reduced, cols, bulk, present, o2_col, t, p, tol, rn
         return None
     o2_mu = None if o2_col is None else cols[o2_col][3]
     polished = _polish(phases, reduced, bulk, previous.gamma, t, p, o2_mu=o2_mu)
+    if polished is None and len(phases) > 1:
+        # the old assemblage does not fit the new bulk (some phase would go negative): start again from
+        # its main phase alone and let the check add the others back
+        main = max(phases, key=lambda ph: ph.amount)
+        polished = _polish([main], reduced, bulk, previous.gamma, t, p, o2_mu=o2_mu)
     if polished is None:
         return None
     phases, gamma, d_o = polished
-    if any(ph.amount < 1e-9 for ph in phases):
-        return None                       # a phase is on its way out: let the full search decide
+    total = sum(max(ph.amount, 0.0) for ph in phases)
+    if any(ph.amount < 1e-9 * total for ph in phases):
+        # a phase is used up (in fractional crystallization the crystals were just taken out): drop it
+        kept = [ph for ph in phases if ph.amount >= 1e-9 * total]
+        if not kept:
+            return None
+        polished = _polish(kept, reduced, bulk, gamma, t, p, o2_mu=o2_mu)
+        if polished is None:
+            return None
+        phases, gamma, d_o = polished
+        if any(ph.amount < 1e-9 * total for ph in phases):
+            return None
     worst, extra = _check(reduced, cols, phases, {}, gamma, t, p, tol, rng)
     b = bulk.copy()
     b[COMPONENTS.index("O")] -= d_o
@@ -344,6 +369,7 @@ def _augment(phases, extra, reduced, cols, best_q, bulk, gamma, o2_col, t, p, to
         allnew = sorted(best.values(), key=lambda z: z[0])
         # all new phases at once, else only the worst one; a trace amount, else a little more
         trials = [(allnew, 1e-4), (allnew[:1], 1e-4), (allnew, 1e-2), (allnew[:1], 1e-2)]
+        trials += [([one], frac) for one in allnew[1:] for frac in (1e-4, 1e-2)]   # each of the others alone
         for chosen, frac in trials:
             new = list(phases)
             for val, (n, q, c, g) in chosen:
@@ -373,6 +399,20 @@ def _augment(phases, extra, reduced, cols, best_q, bulk, gamma, o2_col, t, p, to
             b[io] -= d_o
             return phases, gamma, b, worst
     return None
+
+
+def _merge_twins(phases, merge: float = 0.01) -> list:
+    """Two copies of one solution phase that the solve brought to the same composition are one phase."""
+    out = []
+    for ph in phases:
+        for o in out:
+            if (o.name == ph.name and o.prop is not None and ph.prop is not None
+                    and np.max(np.abs(o.prop - ph.prop)) < merge):
+                o.amount += ph.amount
+                break
+        else:
+            out.append(Phase(ph.name, ph.amount, ph.prop, ph.end_members, ph.composition, ph.g))
+    return out
 
 
 def _finish(cols, x, o2_col, reduced, bulk, gamma, t, p, polish_ok: bool = False):
@@ -416,7 +456,7 @@ def _check(reduced, cols, phases, best_q, gamma, t, p, tol, rng):
     return worst, extra
 
 
-def _polish(phases, reduced, bulk, gamma, t, p, max_iter: int = 40, o2_mu: float | None = None):
+def _polish(phases, reduced, bulk, gamma, t, p, max_iter: int = 80, o2_mu: float | None = None):
     """Newton solve of the exact equilibrium on the assemblage found by the LP.
 
     Unknowns: moles of every end member of every solution phase, moles of each pure phase, and gamma.
@@ -439,30 +479,37 @@ def _polish(phases, reduced, bulk, gamma, t, p, max_iter: int = 40, o2_mu: float
             blocks.append(("pure", ph.name, None, 1))
             x0.append([ph.amount])
         else:
+            # a solution phase is carried as log(amount) and its proportions, so that a trace phase
+            # (a little spinel) is as easy to solve as a major one; proportions that can never be
+            # negative are carried as logarithms too
             r = reduced[ph.name]
-            blocks.append(("ss", ph.name, r, len(r.keep)))
-            n = ph.amount * ph.prop[r.keep]
-            n = np.where(r.positive, np.log(np.maximum(n, 1e-14 * ph.amount)), n)
-            x0.append(n)
+            blocks.append(("ss", ph.name, r, len(r.keep) + 1))
+            q = ph.prop[r.keep] / ph.prop[r.keep].sum()
+            z = np.where(r.positive, np.log(np.maximum(q, 1e-14)), q)
+            x0.append(np.concatenate([[np.log(max(ph.amount, 1e-30))], z]))
     x = np.concatenate(x0 + [gamma[present]] + ([[0.0]] if o2_mu is not None else []))
     nvar = len(x)
     pure_c = {ph.name: ph.composition[present] for ph in phases if ph.prop is None}
     pure_g = {ph.name: ph.g for ph in phases if ph.prop is None}
     b = bulk[present]
 
-    def unpack(x):
+    def unpack(x, sums=None):
         out, k = [], 0
         for kind, name, r, size in blocks:
             v = x[k:k + size]
             if kind == "ss":
-                v = np.where(r.positive, np.exp(np.minimum(v, 50.0)), v)
+                q = np.where(r.positive, np.exp(np.minimum(v[1:], 50.0)), v[1:])
+                if sums is not None:
+                    sums.append(q.sum() - 1.0)
+                v = np.exp(min(v[0], 50.0)) * q
             out.append(v)
             k += size
         return out, x[k:k + nc]
 
     def residual(x):
-        parts, gam = unpack(x)
-        res, mass = [], np.zeros(nc)
+        sums = []
+        parts, gam = unpack(x, sums)
+        res, mass = [sums], np.zeros(nc)
         for (kind, name, r, size), n in zip(blocks, parts):
             if kind == "pure":
                 res.append([pure_g[name] - pure_c[name] @ gam])
@@ -508,7 +555,7 @@ def _polish(phases, reduced, bulk, gamma, t, p, max_iter: int = 40, o2_mu: float
         except np.linalg.LinAlgError:
             return None
         step, norm0 = 1.0, np.linalg.norm(f)
-        while step > 1e-4:
+        while step > 1e-8:
             fn = residual(x + step * dx)
             if fn is not None and np.linalg.norm(fn) < norm0:
                 break
