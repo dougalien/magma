@@ -162,6 +162,30 @@ stays on its Cr-rich side of the solvus.  Without Cr2O3 in the system only one c
 
 Next: speed (each step now takes 5-15 s with sixteen phases), and a better-behaved liquid for sodium.
 
+## A second engine: Holland & Powell (in progress)
+
+MELTS is weak where Bowen's series ends: its hornblende never forms, and its liquid keeps too much
+sodium below about 800 C.  Magma is gaining a second, self-consistent system for cool, wet magmas:
+the Holland & Powell end-member dataset with the igneous solution models (Holland and Powell 2011;
+Green et al. 2016; Holland, Green and Powell 2018).  Numbers are taken from MAGEMin's distribution
+of the dataset, with Douglas's approval (2026-11-02); the code is our own.  The plan has five steps:
+dataset, solid solutions, pyroxenes and amphibole, liquid and solver, then the app's engine switch.
+
+Step 1 is in: `data/hp_ds636.tsv` (291 end members) and `magma/hp/endmembers.py`, which gives G(T, P)
+from the Holland and Powell (2011) heat capacity, modified Tait equation of state and thermal pressure,
+Landau and Bragg-Williams order-disorder, the liquid end-member form, and Pitzer and Sterner (1994) for
+H2O and CO2.  Checks (tests/test_hp_endmembers.py):
+
+| check | Magma (HP engine) | reference |
+|---|---|---|
+| albite = jadeite + quartz, 600 C | 16.5 kbar | 16.2 kbar (Holland 1980) |
+| quartz = coesite, 1000 C | 30.4 kbar | about 30.5 kbar (Bose and Ganguly 1995) |
+| Al2SiO5 triple point | 538 C, 4.3 kbar | about 550 C, 4.5 kbar (Pattison 1992) |
+| H2O, G(P) - G(1 bar), 900 C, 3 kbar | 77.15 kJ | 77.02 kJ (IAPWS-95) |
+| quartz alpha-beta | Cp spike at 847 K | 847 K |
+
+The engine is not yet used by any calculation.
+
 ## The app
 
 `python -m magma.app` (or `Magma.exe`) starts a small local server and opens two browser windows,
