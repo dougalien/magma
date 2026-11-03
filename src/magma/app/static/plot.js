@@ -137,20 +137,20 @@ class LinePlot {
     // text labels placed in data coordinates (field names on a classification diagram)
     (opts.labels || []).forEach((t) => {
       if (t.x < x0 || t.x > x1 || t.y < y0 || t.y > y1) return;
-      g += `<text class="fieldlabel" x="${f(sx(t.x))}" y="${f(sy(t.y))}" text-anchor="middle">${t.text}</text>`;
+      g += `<text class="fieldlabel" x="${f(sx(t.x))}" y="${f(sy(t.y))}" text-anchor="middle">${chemSVG(t.text)}</text>`;
     });
     // markers with a short label (the steps where the magma type changes)
     (opts.marks || []).forEach((t) => {
       g += `<circle cx="${f(sx(t.x))}" cy="${f(sy(t.y))}" r="4.5" style="fill:${t.color || "var(--ink)"};stroke:var(--bg)" stroke-width="1.5"/>`;
-      if (t.text) g += `<text class="marklabel" x="${f(sx(t.x) + 7)}" y="${f(sy(t.y) - 7)}">${t.text}</text>`;
+      if (t.text) g += `<text class="marklabel" x="${f(sx(t.x) + 7)}" y="${f(sy(t.y) - 7)}">${chemSVG(t.text)}</text>`;
     });
     this.svgHost.innerHTML =
       `<svg viewBox="0 0 ${w} ${hgt}" width="${w}" height="${hgt}" xmlns="http://www.w3.org/2000/svg" role="img" ` +
       `aria-label="${(opts.title || "Plot").replace(/"/g, "")}">` +
       `<g class="axis"><line x1="${m.l}" x2="${m.l + pw}" y1="${m.t + ph}" y2="${m.t + ph}"/>` +
       `<line x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t + ph}"/>${g}</g>` +
-      `<text class="axislabel" x="${m.l + pw / 2}" y="${hgt - 6}" text-anchor="middle">${opts.xLabel || ""}</text>` +
-      `<text class="axislabel" transform="translate(14,${m.t + ph / 2}) rotate(-90)" text-anchor="middle">${opts.yLabel || ""}</text>` +
+      `<text class="axislabel" x="${m.l + pw / 2}" y="${hgt - 6}" text-anchor="middle">${chemSVG(opts.xLabel || "")}</text>` +
+      `<text class="axislabel" transform="translate(14,${m.t + ph / 2}) rotate(-90)" text-anchor="middle">${chemSVG(opts.yLabel || "")}</text>` +
       `<line class="cross" id="cross" y1="${m.t}" y2="${m.t + ph}" style="display:none"/></svg>`;
     this.geom = { m, pw, ph, x0, x1, sx, sy };
   }
@@ -166,7 +166,7 @@ class LinePlot {
     if (best < 0) return;
     const cross = this.svgHost.querySelector("#cross");
     if (cross) { cross.setAttribute("x1", sx(x[best])); cross.setAttribute("x2", sx(x[best])); cross.style.display = ""; }
-    let html = `<b>${opts.xName || "x"} ${fmtVal(x[best])}${opts.xUnit || ""}</b>`;
+    let html = `<b>${chemHTML(opts.xName || "x")} ${fmtVal(x[best])}${opts.xUnit || ""}</b>`;
     if (opts.sub) html += `<div class="muted">${opts.sub(best)}</div>`;
     if (opts.strip && opts.strip[best] && opts.strip[best] !== "good") {
       html += `<div class="muted">thermodynamics: ${opts.strip[best] === "poor" ? "unreliable" : "approximate"}</div>`;
@@ -180,7 +180,7 @@ class LinePlot {
       }
       const fv = opts.hoverFixed ? (v) => (v === null || v === undefined ? "–" : v.toFixed(opts.hoverFixed)) : fmtVal;
       const range = s.lo && s.lo[k] !== null && s.hi[k] !== null ? ` <span class="muted">(${fv(s.lo[k])} to ${fv(s.hi[k])})</span>` : "";
-      html += `<div><span style="color:${s.color}">■</span> ${s.label}: ${fv(s.y[k])}${range}</div>`;
+      html += `<div><span style="color:${s.color}">■</span> ${chemHTML(s.label)}: ${fv(s.y[k])}${range}</div>`;
     });
     this.tip.innerHTML = html;
     this.tip.style.display = "block";
