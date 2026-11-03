@@ -44,7 +44,7 @@ function openResults() { window.open("/results", "magma-results"); }
 function fillPreset(name) {
   const p = INFO.presets[name];
   for (const ox of INFO.oxides) $(`ox-${ox}`).value = p && p.wt[ox] ? p.wt[ox] : "";
-  $("preset-source").textContent = p ? p.source : "Type your own composition, in oxide wt%.";
+  $("preset-source").replaceChildren(...chem(p ? p.source : "Type your own composition, in oxide wt%."));
   total();
 }
 
@@ -119,7 +119,7 @@ function cardEl(c) {
   const meta = c.kind === "example" ? "KLB-1, then cool its melt" :
     `${si}% SiO2 · ${c.kind === "rock" ? `${c.p_bar / 1000} kbar, ${c.t_start} to ${c.t_end} °C` : `${c.t_start} to ${c.t_end} °C, ${c.p_bar / 1000} kbar`}`;
   return h("button", { class: "scard", "data-title": c.title, onclick: () => applyCard(c) },
-    h("b", {}, c.title), h("span", { class: "blurb" }, c.blurb), h("span", { class: "meta" }, meta));
+    h("b", {}, c.title), h("span", { class: "blurb" }, c.blurb), h("span", { class: "meta" }, ...chem(meta)));
 }
 
 async function init() {
@@ -130,7 +130,7 @@ async function init() {
   sel.addEventListener("change", () => fillPreset(sel.value));
   for (const ox of INFO.oxides) {
     const inp = h("input", { id: `ox-${ox}`, type: "number", min: "0", step: "any", oninput: () => { total(); sel.value = "custom"; $("preset-source").textContent = "Your own composition."; } });
-    $("oxides").append(h("label", { class: "f" }, ox, inp));
+    $("oxides").append(h("label", { class: "f" }, ...chem(ox), inp));
   }
   for (const p of INFO.phases) {
     const c = h("span", { class: "chip on", "data-name": p.name, role: "checkbox", "aria-checked": "true", tabindex: "0" }, p.label);

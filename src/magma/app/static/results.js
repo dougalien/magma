@@ -128,7 +128,7 @@ function draw() {
   }
   const { x, s, opts } = series(ST.steps);
   plot.set(x, s, Object.assign({ xLabel: "temperature, °C", xName: "", xUnit: " °C", hoverFixed: 2 }, opts));
-  $("legend").replaceChildren(...s.filter((q) => !q.noLegend).map((q) => h("span", {}, h("span", { class: "sw", style: `border-color:${q.color}${q.dash ? ";border-top-style:dashed" : ""}` }), q.label)));
+  $("legend").replaceChildren(...s.filter((q) => !q.noLegend).map((q) => h("span", {}, h("span", { class: "sw", style: `border-color:${q.color}${q.dash ? ";border-top-style:dashed" : ""}` }), ...chem(q.label))));
   const melting = ST.inputs.process === "melt";
   $("axisnote").textContent = VIEW === "tas" ? "Total alkali-silica diagram (Le Bas et al. 1986); dots mark a new magma type."
     : ST.inputs.mode === "fractional" && VIEW === "mass"
@@ -236,9 +236,9 @@ function story(st) {
 function table(steps) {
   const names = phaseNames(steps);
   const ox = Object.keys(steps[0].liquid);
-  const head = h("tr", {}, h("th", {}, "T, °C"), h("th", {}, "Melt, %"), h("th", { class: "l" }, "Magma type"), ...names.map((n) => h("th", { class: "l" }, `${label(steps, n)}, g`)), ...ox.map((o) => h("th", {}, o)), h("th", {}, "Mg#"));
+  const head = h("tr", {}, h("th", {}, "T, °C"), h("th", {}, "Melt, %"), h("th", { class: "l" }, "Magma type"), ...names.map((n) => h("th", { class: "l" }, `${label(steps, n)}, g`)), ...ox.map((o) => h("th", {}, ...chem(o))), h("th", {}, "Mg#"));
   const rows = steps.map((s) => h("tr", {}, h("td", {}, s.t.toFixed(1)), h("td", {}, s.melt_pct.toFixed(2)), h("td", { class: "l", title: `TAS: ${s.tas}` }, s.magma_type),
-    ...names.map((n) => { const p = s.solids.find((q) => q.name === n); return h("td", { class: "l" }, p ? `${p.grams.toFixed(3)} ${p.formula}` : ""); }),
+    ...names.map((n) => { const p = s.solids.find((q) => q.name === n); return h("td", { class: "l" }, ...(p ? chem(`${p.grams.toFixed(3)} ${p.formula}`) : [""])); }),
     ...ox.map((o) => h("td", {}, (s.liquid[o] ?? 0).toFixed(2))), h("td", {}, s.mg_number.toFixed(1))));
   $("table").replaceChildren(h("thead", {}, head), h("tbody", {}, rows));
 }
@@ -277,8 +277,8 @@ function show(st) {
     ? `Melted at ${i.example.t_source} °C and ${i.example.p_source} bar; the melt cooled at ${i.p_bar} bar from ${i.t_start} to ${i.t_end} °C in ${i.step} °C steps, ${i.example.h2o} wt% water, oxygen ${i.fo2}`
     : `${i.t_start} to ${i.t_end} °C in ${i.step} °C steps, ${i.p_bar} bar, oxygen ${i.fo2 === "closed" ? "closed system" : i.fo2}`;
   $("types").replaceChildren(...(melting ? [] : typeSteps(st.steps).map((s) => h("span", { title: `TAS: ${s.tas}` }, `${s.magma_type} · ${s.t.toFixed(0)} °C`))));
-  $("story").replaceChildren(...story(st).map((t) => h("p", {}, t)), ...(st.status === "error" ? [h("div", { class: "errbox" }, st.message)] : st.message && st.status === "done" ? [h("p", {}, st.message)] : []));
-  $("notes").replaceChildren(...st.notes.map((n) => h("li", {}, n)));
+  $("story").replaceChildren(...story(st).map((t) => h("p", {}, ...chem(t))), ...(st.status === "error" ? [h("div", { class: "errbox" }, st.message)] : st.message && st.status === "done" ? [h("p", {}, ...chem(st.message))] : []));
+  $("notes").replaceChildren(...st.notes.map((n) => h("li", {}, ...chem(n))));
   if (!st.steps.length) { $("table").replaceChildren(); return; }
   table(st.steps);
   draw();
