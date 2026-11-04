@@ -162,7 +162,7 @@ def _cards() -> None:
         cols = st.columns(len(group))
         for col, c in zip(cols, group):
             col.button(c["title"], key=f"card-{c['title']}", help=c["blurb"], on_click=_apply_card, args=(c,),
-                       use_container_width=True)
+                       width="stretch")
     st.caption("The whole story")
     st.button("Mantle to magma: Bowen's series", help="Melt the mantle, then cool the melt: Bowen's series and "
               "the magma types.", on_click=_example_card)
@@ -204,7 +204,7 @@ def input_page() -> None:
     with top[0]:
         header("cooling a melt, melting a rock")
     with top[1]:
-        st.link_button("Open results window", f"{PATHS['results']}?w={wid}", use_container_width=True,
+        st.link_button("Open results window", f"{PATHS['results']}?w={wid}", width="stretch",
                        help="Opens the Results window in a new browser window; put it on a second screen. "
                             "It follows this window's runs.")
 
@@ -279,14 +279,14 @@ def run_bar(state: State, input_page: bool) -> None:
     running = state.status == "running"
     cols = st.columns([1, 1, 6])
     if input_page:
-        if cols[0].button("Run", type="primary", disabled=running, use_container_width=True):
+        if cols[0].button("Run", type="primary", disabled=running, width="stretch"):
             try:
                 state.start(_inputs())
                 st.session_state[f"seen-input"] = state.version
                 st.rerun()
             except (ValueError, TypeError) as exc:
                 st.error(str(exc))
-    if running and cols[1].button("Stop", use_container_width=True):
+    if running and cols[1].button("Stop", width="stretch"):
         state.stop()
     if running:
         k, n = state.progress
@@ -318,9 +318,10 @@ def _label(steps, name):
 
 def _fig(xlabel, ylabel, **kw) -> go.Figure:
     fig = go.Figure()
-    fig.update_layout(height=480, margin=dict(l=10, r=10, t=30, b=10), xaxis_title=xlabel, yaxis_title=ylabel,
-                      hovermode="x unified", legend=dict(orientation="h", y=-0.18), colorway=PALETTE,
-                      paper_bgcolor="#F3F1EB", plot_bgcolor="#F3F1EB", font=dict(color="#2B3134"), **kw)
+    layout = dict(height=480, margin=dict(l=10, r=10, t=30, b=10), xaxis_title=xlabel, yaxis_title=ylabel,
+                  hovermode="x unified", legend=dict(orientation="h", y=-0.18), colorway=PALETTE,
+                  paper_bgcolor="#F3F1EB", plot_bgcolor="#F3F1EB", font=dict(color="#2B3134"))
+    fig.update_layout(**{**layout, **kw})          # a caller's own settings (hovermode for TAS) win
     fig.update_xaxes(gridcolor="#DDD8CC", zerolinecolor="#CFC8B8")
     fig.update_yaxes(gridcolor="#DDD8CC", zerolinecolor="#CFC8B8")
     return fig
@@ -447,7 +448,7 @@ def results_page() -> None:
     with top[0]:
         header("results")
     with top[1]:
-        st.link_button("Back to the input window", f"{PATHS['input']}?w={wid}", use_container_width=True)
+        st.link_button("Back to the input window", f"{PATHS['input']}?w={wid}", width="stretch")
     snap = state.snapshot()
     has = snap["steps"] or (snap["inputs"].get("process") == "example" and snap["status"] != "idle")
     if not has:
@@ -489,7 +490,7 @@ def results_page() -> None:
         _bowen_view(steps)
     else:
         fig = {"mass": _mass_plot, "liquid": _liquid_plot, "minerals": _mineral_plot}.get(view)
-        st.plotly_chart(fig(steps) if fig else _tas_plot(snap), use_container_width=True)
+        st.plotly_chart(fig(steps) if fig else _tas_plot(snap), width="stretch")
         if view == "tas":
             st.caption("Total alkali-silica diagram (Le Bas et al. 1986); dots mark a new magma type.")
         elif view == "mass" and i.get("mode") == "fractional":
@@ -497,7 +498,7 @@ def results_page() -> None:
                        else "Crystal masses are the totals removed so far.")
     head, rows = _table_rows(steps)
     st.markdown("**Every step**")
-    st.dataframe([dict(zip(head, r)) for r in rows], use_container_width=True, hide_index=True)
+    st.dataframe([dict(zip(head, r)) for r in rows], width="stretch", hide_index=True)
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(head)
