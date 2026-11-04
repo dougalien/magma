@@ -27,6 +27,11 @@ from ..thermo.phases import PHASES
 from .story import bowen, story, type_steps
 
 FEEDBACK_URL = "https://github.com/dougalien/magma/issues"
+# Where the two windows live; a host app (Protolith) that mounts these pages elsewhere changes them,
+# and can add panels to the windows through the hooks (each a function of the State).
+PATHS = {"input": "./", "results": "./results"}
+RESULTS_EXTRAS: list = []
+APP_NAME = "Magma"
 WORKSPACE_TTL = 12 * 3600          # a workspace untouched for 12 hours is dropped
 # Muted series colours that sit with the Dougalien sand, slate and rust
 PALETTE = ["#3E5C6B", "#B4532A", "#C49A55", "#5E8C6A", "#8A6A9A", "#4F86A0", "#A8644A", "#6B6F45"]
@@ -199,7 +204,7 @@ def input_page() -> None:
     with top[0]:
         header("cooling a melt, melting a rock")
     with top[1]:
-        st.link_button("Open results window", f"./results?w={wid}", use_container_width=True,
+        st.link_button("Open results window", f"{PATHS['results']}?w={wid}", use_container_width=True,
                        help="Opens the Results window in a new browser window; put it on a second screen. "
                             "It follows this window's runs.")
 
@@ -442,7 +447,7 @@ def results_page() -> None:
     with top[0]:
         header("results")
     with top[1]:
-        st.link_button("Back to the input window", f"./?w={wid}", use_container_width=True)
+        st.link_button("Back to the input window", f"{PATHS['input']}?w={wid}", use_container_width=True)
     snap = state.snapshot()
     has = snap["steps"] or (snap["inputs"].get("process") == "example" and snap["status"] != "idle")
     if not has:
@@ -498,6 +503,8 @@ def results_page() -> None:
     w.writerow(head)
     w.writerows(rows)
     st.download_button("Download the table (CSV)", buf.getvalue(), file_name="magma_run.csv", mime="text/csv")
+    for extra in RESULTS_EXTRAS:
+        extra(state, snap)
     with st.expander("Notes on the models"):
         for n in snap["notes"]:
             st.markdown(f"- {n}")
