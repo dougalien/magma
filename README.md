@@ -9,6 +9,18 @@ temperature, pressure, bulk composition and oxygen fugacity, in the manner of ME
 Sack 1995).  It is an original implementation from the published equations and parameters; the
 open-source ThermoEngine is used only to check numbers.  See [docs/DESIGN.md](docs/DESIGN.md).
 
+## On the web (Streamlit)
+
+Magma also runs as a hosted Streamlit app with the same two windows: Input (the app's address) and
+Results (`/results`, opened from the "Open results window" button, so it can sit on a second screen).
+The two windows share one run through a private `?w=` id in the address; each visitor has their own.
+The science code is the same; only the front end (`src/magma/web/`) is new.
+
+    pip install -r requirements.txt
+    streamlit run streamlit_app.py
+
+On Streamlit Community Cloud: New app, this repository, entry point `streamlit_app.py`.
+
 ## Status
 
 Milestones 1 and 2 are under way.  Working now, for anhydrous to slightly hydrous basaltic melts:
