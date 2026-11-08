@@ -143,10 +143,12 @@ def story(st) -> list[str]:
         if len(order) > 1:
             out.append("Order of crystallization: "
                        + ", then ".join(f"{o['l'].lower()} at {o['t']:.0f} °C" for o in order) + ".")
-        frac = (f" ({last['liquid_grams']:.1f} g of melt left from 100 g)."
-                if st["inputs"].get("mode") == "fractional" else ".")
-        out.append(f"At {last['t']:.0f} °C the system is {last['melt_pct']:.1f}% melt by mass{frac} The melt has "
-                   f"{last['liquid'].get('SiO2', 0):.1f} wt% SiO2 and Mg# {last['mg_number']:.0f}.")
+        if st["inputs"].get("mode") == "fractional":
+            lead = (f"At {last['t']:.0f} °C, {last['liquid_grams']:.1f} g of melt is left from the starting 100 g; "
+                    "the rest has crystallized and been taken out.")
+        else:
+            lead = f"At {last['t']:.0f} °C the system is {last['melt_pct']:.1f}% melt by mass."
+        out.append(f"{lead} The melt has {last['liquid'].get('SiO2', 0):.1f} wt% SiO2 and Mg# {last['mg_number']:.0f}.")
     if first and "clinopyroxene" not in (st["inputs"].get("phases") or []):
         out.append("Clinopyroxene was not allowed in this run.")
     rn = runaway_note(steps)

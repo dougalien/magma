@@ -223,8 +223,9 @@ function story(st) {
     const order = [];
     steps.forEach((s) => s.solids.forEach((p) => { if (p.grams > 1e-6 && !order.find((o) => o.n === p.name)) order.push({ n: p.name, t: s.t, l: p.label }); }));
     if (order.length > 1) out.push(`Order of crystallization: ${order.map((o) => `${o.l.toLowerCase()} at ${o.t.toFixed(0)} °C`).join(", then ")}.`);
-    out.push(`At ${last.t.toFixed(0)} °C the system is ${last.melt_pct.toFixed(1)}% melt by mass` +
-      (st.inputs.mode === "fractional" ? ` (${last.liquid_grams.toFixed(1)} g of melt left from 100 g).` : ".") +
+    out.push((st.inputs.mode === "fractional"
+      ? `At ${last.t.toFixed(0)} °C, ${last.liquid_grams.toFixed(1)} g of melt is left from the starting 100 g; the rest has crystallized and been taken out.`
+      : `At ${last.t.toFixed(0)} °C the system is ${last.melt_pct.toFixed(1)}% melt by mass.`) +
       ` The melt has ${last.liquid.SiO2.toFixed(1)} wt% SiO2 and Mg# ${last.mg_number.toFixed(0)}.`);
   }
   if (first && !(st.inputs.phases || []).includes("clinopyroxene")) out.push("Clinopyroxene was not allowed in this run.");

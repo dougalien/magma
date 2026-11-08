@@ -1,6 +1,6 @@
 # Magma
 
-A Dougalien Systems app ([dougalien.com](https://dougalien.com)).  Open magma modelling in Python:
+A Dougalien Systems app ([dougalien.com](https://dougalien.com)).  Open magma modeling in Python:
 cool a silicate melt and follow what crystallizes (equilibrium or fractional), or heat a rock and
 follow the melt that forms.  The high-temperature companion to Reaction.
 
