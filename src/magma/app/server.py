@@ -50,7 +50,7 @@ HP_NOTES = [
     "solidus and phases MELTS lacks can appear: cordierite, epidote, chlorite, rutile, sphene, the "
     "Al2SiO5 minerals, corundum and nepheline. A feldspar with Or above 30% is shown as K-feldspar, a "
     "clinopyroxene with Wo below 25% as pigeonite, a spinel with more than half magnetite and "
-    "ulvospinel as titanomagnetite.",
+    "ulvöspinel as titanomagnetite.",
     "Not in this engine: MnO, P2O5, NiO, CoO and CO2 (left out), apatite and zircon. The liquid model is "
     "calibrated for 1 to 30 kbar and is least certain at very low pressure.",
     "Iron: the system is open to oxygen at the chosen buffer (or closed, keeping its starting Fe2O3).",

@@ -24,6 +24,7 @@ from ..classify import TAS_FIELDS, TAS_LINES
 from ..composition import CARDS, OXIDES, PRESETS
 from ..differentiation import DEFAULTS as EXAMPLE_DEFAULTS
 from ..thermo.phases import PHASES
+from .chem import chem_html, chem_text
 from .story import bowen, story, type_steps
 
 FEEDBACK_URL = "https://github.com/dougalien/magma/issues"
@@ -48,6 +49,28 @@ MODE_HINTS = {
     ("melt", "fractional"): "The melt above 1% of the rock is taken out at each step and pooled; the residue keeps melting.",
     ("example", "fractional"): "Stage 1 is batch melting of the mantle rock; stage 2 is fractional crystallization of its melt.",
 }
+
+
+def num(x, comma: bool = False) -> str:
+    """1250.0 -> '1250'; 2.5 -> '2.5'; with comma (pressures), 10000.0 -> '10,000'."""
+    try:
+        x = float(x)
+    except (TypeError, ValueError):
+        return str(x)
+    c = "," if comma else ""
+    return f"{x:{c}.0f}" if x == int(x) else f"{x:{c}g}"
+
+
+def md(text: str, caption: bool = False) -> None:
+    """Markdown with chemical subscripts."""
+    (st.caption if caption else st.markdown)(chem_html(text), unsafe_allow_html=True)
+
+
+def _card_meta(c: dict) -> str:
+    """'51% SiO₂ · 1250 to 1050 °C, 1 kbar', as on the desktop cards."""
+    si = PRESETS[c["preset"]].normalized(volatile_free=True).get("SiO2")
+    t, p = f"{num(c['t_start'])} to {num(c['t_end'])} °C", f"{num(c['p_bar'] / 1000)} kbar"
+    return f"{si:.0f}% SiO₂ · " + (f"{p}, {t}" if c["kind"] == "rock" else f"{t}, {p}")
 
 
 # ---- workspaces: one State per user, shared by that user's two windows ------------------------------
@@ -106,7 +129,7 @@ def header(subtitle: str) -> None:
 
 def footer() -> None:
     st.divider()
-    st.caption(f"Magma {__version__} · alpha · [Report a problem]({FEEDBACK_URL}) · Every number comes from "
+    st.caption(f"Magma {__version__} · beta · [Report a problem]({FEEDBACK_URL}) · Every number comes from "
                "Magma's own solver; every datum is cited in the notes.")
 
 
@@ -163,9 +186,13 @@ def _cards() -> None:
         for col, c in zip(cols, group):
             col.button(c["title"], key=f"card-{c['title']}", help=c["blurb"], on_click=_apply_card, args=(c,),
                        width="stretch")
+            col.caption(f"{c['blurb']}  \n{_card_meta(c)}")
     st.caption("The whole story")
-    st.button("Mantle to magma: Bowen's series", help="Melt the mantle, then cool the melt: Bowen's series and "
-              "the magma types.", on_click=_example_card)
+    a, _ = st.columns([1, 3])
+    a.button("Mantle to magma: Bowen's series", help="Melt the mantle, then cool the melt: Bowen's series and "
+             "the magma types.", on_click=_example_card, width="stretch")
+    a.caption("Partly melt the mantle, then cool that melt with fractional crystallization through Bowen's series.  \n"
+              "KLB-1, then cool its melt")
 
 
 def _inputs() -> dict:
@@ -217,13 +244,13 @@ def input_page() -> None:
         with st.container(border=True):
             st.markdown("**" + {"melt": "Starting rock", "example": "Mantle rock"}.get(proc, "Starting melt") + "**")
             st.selectbox("Composition", list(PRESETS), key="preset", on_change=lambda: _set_composition(ss["preset"]))
-            st.caption(PRESETS[ss["preset"]].source)
+            md(PRESETS[ss["preset"]].source, caption=True)
             cols = st.columns(4)
             for i, ox in enumerate(OXIDE_INPUTS):
-                cols[i % 4].number_input(f"{ox}, wt%", key=f"ox-{ox}", min_value=0.0, step=0.1, format="%.3f")
+                cols[i % 4].number_input(f"{chem_text(ox)}, wt%", key=f"ox-{ox}", min_value=0.0, step=0.1, format="%.2f")
             total = sum(ss[f"ox-{ox}"] or 0 for ox in OXIDE_INPUTS)
-            st.caption(f"Total **{total:.2f}** wt%. Values are normalized to 100. Give iron as FeO and Fe2O3, "
-                       "or all as FeO.")
+            md(f"Total **{total:.2f}** wt%. Values are normalized to 100. Give iron as FeO and Fe2O3, "
+               "or all as FeO.", caption=True)
     with right:
         with st.container(border=True):
             st.markdown("**Process**")
@@ -249,27 +276,27 @@ def input_page() -> None:
                            "taken out as they form (fractional crystallization).")
                 st.markdown("1. Melting the mantle")
                 a, b = st.columns(2)
-                a.number_input("Melting temperature, °C", key="ex-t_source", step=10.0)
-                b.number_input("Pressure, bar", key="ex-p_source", min_value=1.0, step=500.0)
+                a.number_input("Melting temperature, °C", key="ex-t_source", step=10.0, format="%g")
+                b.number_input("Pressure, bar", key="ex-p_source", min_value=1.0, step=500.0, format="%g")
                 st.markdown("2. Cooling the melt in the crust")
                 a, b = st.columns(2)
-                a.number_input("Pressure, bar", key="ex-p_crust", min_value=1.0, step=500.0)
-                b.number_input("Water added, wt%", key="ex-h2o", min_value=0.0, step=0.5)
-                a.number_input("Cool to, °C", key="ex-t_end", step=10.0)
-                b.number_input("Step, °C", key="ex-step", min_value=1.0, step=1.0)
+                a.number_input("Pressure, bar", key="ex-p_crust", min_value=1.0, step=500.0, format="%g")
+                b.number_input("Water added, wt%", key="ex-h2o", min_value=0.0, step=0.5, format="%g")
+                a.number_input("Cool to, °C", key="ex-t_end", step=10.0, format="%g")
+                b.number_input("Step, °C", key="ex-step", min_value=1.0, step=1.0, format="%g")
                 st.selectbox("Oxygen", ["NNO", "QFM", "NNO+1"], key="ex-fo2")
             else:
                 st.markdown("**Conditions**")
                 a, b, c = st.columns(3)
-                a.number_input("Start, °C", key="t_start", step=10.0)
-                b.number_input("End, °C", key="t_end", step=10.0)
-                c.number_input("Step, °C", key="step", min_value=0.5, step=1.0)
+                a.number_input("Start, °C", key="t_start", step=10.0, format="%g")
+                b.number_input("End, °C", key="t_end", step=10.0, format="%g")
+                c.number_input("Step, °C", key="step", min_value=0.5, step=1.0, format="%g")
                 a, b, c = st.columns(3)
-                a.number_input("Pressure, bar", key="p_bar", min_value=1.0, step=100.0)
+                a.number_input("Pressure, bar", key="p_bar", min_value=1.0, step=100.0, format="%g")
                 b.selectbox("Oxygen", BUFFERS, key="buffer",
                             format_func=lambda x: "Closed to oxygen" if x == "closed" else f"{x} buffer")
                 if ss["buffer"] != "closed":
-                    c.number_input("Offset, log units", key="offset", step=0.5)
+                    c.number_input("Offset, log units", key="offset", step=0.5, format="%g")
 
     run_bar(state, input_page=True)
     footer()
@@ -344,7 +371,7 @@ def _liquid_plot(steps) -> go.Figure:
     x = [s["t"] for s in steps]
     fig = _fig("temperature, °C", "melt, wt%")
     for i, ox in enumerate(o for o in steps[0]["liquid"] if o != "H2O"):
-        fig.add_scatter(x=x, y=[s["liquid"].get(ox) for s in steps], name=ox,
+        fig.add_scatter(x=x, y=[s["liquid"].get(ox) for s in steps], name=chem_html(ox),
                         line=dict(dash="dash" if i >= 8 else None))
     return fig
 
@@ -354,7 +381,7 @@ MINERAL_NUMBERS = [("olivine", "Fo", "Olivine Fo"), ("feldspar", "An", "Plagiocl
                    ("biotite", "Mg#", "Biotite Mg#"), ("clinopyroxene", "Mg#", "Augite Mg#"),
                    ("clinopyroxene", "Wo", "Augite Wo"), ("pigeonite", "Mg#", "Pigeonite Mg#"),
                    ("orthopyroxene", "Mg#", "Orthopyroxene Mg#"), ("spinel", "Cr#", "Spinel Cr#"),
-                   ("spinel", "Usp", "Spinel ulvöspinel"), ("rhombohedral", "Ilm", "Ilmenite (FeTiO3)")]
+                   ("spinel", "Usp", "Spinel ulvöspinel"), ("rhombohedral", "Ilm", "Ilmenite (FeTiO<sub>3</sub>)")]
 
 
 def _mineral_plot(steps) -> go.Figure:
@@ -373,7 +400,7 @@ def _mineral_plot(steps) -> go.Figure:
 
 def _tas_plot(st_) -> go.Figure:
     steps = st_["steps"]
-    fig = _fig("SiO2, wt% (volatile-free)", "Na2O + K2O, wt%", hovermode="closest")
+    fig = _fig("SiO<sub>2</sub>, wt% (volatile-free)", "Na<sub>2</sub>O + K<sub>2</sub>O, wt%", hovermode="closest")
     for ln in TAS_LINES:
         fig.add_scatter(x=[p[0] for p in ln], y=[p[1] for p in ln], mode="lines", showlegend=False,
                         hoverinfo="skip", line=dict(color="#aaaaaa", width=1))
@@ -383,7 +410,7 @@ def _tas_plot(st_) -> go.Figure:
     if steps:
         fig.add_scatter(x=[s["tas_xy"][0] for s in steps], y=[s["tas_xy"][1] for s in steps], name="Melt",
                         mode="lines+markers", marker=dict(size=4), line=dict(color=PALETTE[1], width=3),
-                        text=[f"{s['t']:.0f} °C, {s['liquid_grams']:.1f} g melt: {s['tas']}" for s in steps],
+                        text=[chem_html(f"{s['t']:.0f} °C, {s['liquid_grams']:.1f} g melt: {s['tas']}") for s in steps],
                         hovertemplate="%{text}<extra></extra>")
         ts = type_steps(steps)
         fig.add_scatter(x=[s["tas_xy"][0] for s in ts], y=[s["tas_xy"][1] for s in ts], mode="markers+text",
@@ -408,7 +435,7 @@ def _bowen_view(steps) -> None:
             with st.container(border=True):
                 st.markdown(f"**{title}**" if formed else f"<span style='color:gray'><b>{title}</b></span>",
                             unsafe_allow_html=True)
-                st.caption(text)
+                md(text, caption=True)
     t0, t1 = steps[0]["t"], steps[-1]["t"]
     st.caption(f"↑ hot: {t0:.0f} °C · cool: {t1:.0f} °C ↓")
     a, c = st.columns(2)
@@ -423,7 +450,7 @@ def _bowen_view(steps) -> None:
         with col:
             boxes([item])
     st.caption(f"Also formed, outside Bowen's scheme: {b['also']}." if b["also"]
-               else "Grey boxes: minerals that did not form, or that Magma cannot make yet.")
+               else "Gray boxes: minerals that did not form, or that Magma cannot make yet.")
 
 
 def _table_rows(steps) -> tuple[list[str], list[list]]:
@@ -439,6 +466,24 @@ def _table_rows(steps) -> tuple[list[str], list[list]]:
         r += [round(s["liquid"].get(o, 0.0), 4) for o in ox] + [round(s["mg_number"], 2)]
         rows.append(r)
     return head, rows
+
+
+def _screen_table(steps) -> list[dict]:
+    """The step table as the desktop results window shows it: mineral names, grams and 2 decimals.
+    The CSV download keeps the full columns."""
+    names, ox = _phase_names(steps), list(steps[0]["liquid"])
+    out = []
+    for s in steps:
+        r = {"T, °C": num(s["t"]), "Melt, %": f"{s['melt_pct']:.2f}", "Melt, g": f"{s['liquid_grams']:.2f}",
+             "Magma type": s["magma_type"], "TAS name": s["tas"]}
+        for n in names:
+            p = next((q for q in s["solids"] if q["name"] == n), None)
+            r[f"{_label(steps, n)}, g"] = f"{p['grams']:.3f}" if p and p["grams"] > 1e-9 else ""
+        for o in ox:
+            r[chem_text(o)] = f"{s['liquid'].get(o, 0.0):.2f}"
+        r["Mg#"] = f"{s['mg_number']:.1f}"
+        out.append(r)
+    return out
 
 
 def results_page() -> None:
@@ -461,12 +506,13 @@ def results_page() -> None:
     if proc == "example":
         ex = i.get("example", {})
         title = f"{i.get('name') or 'Mantle'}: from mantle to magma"
-        meta = (f"Melted at {ex.get('t_source')} °C and {ex.get('p_source')} bar; the melt cooled at {i['p_bar']} bar "
-                f"from {i['t_start']} to {i['t_end']} °C in {i['step']} °C steps, {ex.get('h2o')} wt% water, oxygen {i['fo2']}")
+        meta = (f"Melted at {num(ex.get('t_source'))} °C and {num(ex.get('p_source'), True)} bar; the melt cooled at "
+                f"{num(i['p_bar'], True)} bar from {num(i['t_start'])} to {num(i['t_end'])} °C in {num(i['step'])} °C steps, "
+                f"{num(ex.get('h2o'))} wt% water, oxygen {i['fo2']}")
     else:
         title = (f"{i.get('name') or 'Rock'}: {'fractional' if i['mode'] == 'fractional' else 'batch'} melting"
                  if proc == "melt" else f"{i.get('name') or 'Melt'}: {i['mode']} crystallization")
-        meta = (f"{i['t_start']} to {i['t_end']} °C in {i['step']} °C steps, {i['p_bar']} bar, oxygen "
+        meta = (f"{num(i['t_start'])} to {num(i['t_end'])} °C in {num(i['step'])} °C steps, {num(i['p_bar'], True)} bar, oxygen "
                 + ("closed system" if i["fo2"] == "closed" else str(i["fo2"])))
     st.subheader(title)
     st.caption(meta + f" · engine: {'Holland & Powell' if i.get('engine') == 'hp' else 'MELTS'} · run {snap['run_id']}")
@@ -477,9 +523,9 @@ def results_page() -> None:
     with st.container(border=True):
         st.markdown("**What we found**")
         for t in story(snap):
-            st.markdown(t)
+            md(t)
         if snap["status"] == "done" and snap["message"]:
-            st.markdown(snap["message"])
+            md(snap["message"])
     if not steps:
         footer()
         return
@@ -493,12 +539,19 @@ def results_page() -> None:
         st.plotly_chart(fig(steps) if fig else _tas_plot(snap), width="stretch")
         if view == "tas":
             st.caption("Total alkali-silica diagram (Le Bas et al. 1986); dots mark a new magma type.")
-        elif view == "mass" and i.get("mode") == "fractional":
-            st.caption("Mineral masses are what is left in the residue; the melt left in it is 1%." if proc == "melt"
-                       else "Crystal masses are the totals removed so far.")
+        elif view == "mass":
+            notes = []
+            if i.get("mode") == "fractional" or proc == "example":
+                notes.append("Mineral masses are what is left in the residue; the melt left in it is 1%." if proc == "melt"
+                             else "Crystal masses are the totals removed so far.")
+            if i.get("fo2") != "closed":
+                notes.append("With an oxygen buffer the total can be a little over 100 g: the melt takes up oxygen as "
+                             "some of its iron oxidizes.")
+            if notes:
+                st.caption(" ".join(notes))
     head, rows = _table_rows(steps)
     st.markdown("**Every step**")
-    st.dataframe([dict(zip(head, r)) for r in rows], width="stretch", hide_index=True)
+    st.dataframe(_screen_table(steps), width="stretch", hide_index=True)
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(head)
@@ -508,5 +561,5 @@ def results_page() -> None:
         extra(state, snap)
     with st.expander("Notes on the models"):
         for n in snap["notes"]:
-            st.markdown(f"- {n}")
+            md(f"- {n}")
     footer()

@@ -150,7 +150,7 @@ PRESETS: dict[str, Composition] = {
          "MgO": 39.22, "CaO": 3.44, "Na2O": 0.30, "K2O": 0.02, "NiO": 0.25},
         name="KLB-1 spinel lherzolite",
         source="Davis, Tangeman and Hirschmann (2009) Am. Mineral. 94:176-180, Table 1 (KLB-1 of "
-               "Takahashi 1986); FeO is total Fe. Entered from memory: check against the paper",
+               "Takahashi 1986); FeO is total Fe",
     ),
     "Bishop Tuff rhyolite": Composition(
         {"SiO2": 77.5, "TiO2": 0.08, "Al2O3": 12.5, "Fe2O3": 0.207, "FeO": 0.473, "MgO": 0.03,
@@ -164,30 +164,28 @@ PRESETS: dict[str, Composition] = {
          "CaO": 6.41, "Na2O": 3.07, "K2O": 1.81, "P2O5": 0.13, "H2O": 3.0},
         name="Andesite: bulk continental crust",
         source="Rudnick and Gao (2003) Treatise on Geochemistry 3.01, bulk continental crust (an andesite); "
-               "FeO is total Fe; 3 wt% H2O added by Magma, as for an arc andesite. Entered from memory: "
-               "check against the paper",
+               "FeO is total Fe; 3 wt% H2O added by Magma, as for an arc andesite",
     ),
     "Dacite (upper crust)": Composition(
         {"SiO2": 66.62, "TiO2": 0.64, "Al2O3": 15.40, "FeO": 5.04, "MnO": 0.10, "MgO": 2.48,
          "CaO": 3.59, "Na2O": 3.27, "K2O": 2.80, "P2O5": 0.15, "H2O": 4.0},
         name="Dacite: upper continental crust",
         source="Rudnick and Gao (2003) Treatise on Geochemistry 3.01, upper continental crust (a dacite or "
-               "granodiorite); FeO is total Fe; 4 wt% H2O added by Magma. Entered from memory: check "
-               "against the paper",
+               "granodiorite); FeO is total Fe; 4 wt% H2O added by Magma",
     ),
     "Granite source (upper crust)": Composition(
         {"SiO2": 66.62, "TiO2": 0.64, "Al2O3": 15.40, "FeO": 5.04, "MnO": 0.10, "MgO": 2.48,
          "CaO": 3.59, "Na2O": 3.27, "K2O": 2.80, "P2O5": 0.15, "H2O": 1.5},
         name="Upper continental crust (a rock to melt)",
         source="Rudnick and Gao (2003), upper continental crust as above, with 1.5 wt% H2O (the water of "
-               "its micas and amphibole; Magma's choice). Entered from memory: check against the paper",
+               "its micas and amphibole; Magma's choice)",
     ),
     "Lower crust": Composition(
         {"SiO2": 53.4, "TiO2": 0.82, "Al2O3": 16.9, "FeO": 8.57, "MnO": 0.10, "MgO": 7.24,
          "CaO": 9.59, "Na2O": 2.65, "K2O": 0.61, "P2O5": 0.10, "H2O": 0.5},
         name="Lower continental crust (mafic granulite)",
         source="Rudnick and Gao (2003), lower continental crust; FeO is total Fe; 0.5 wt% H2O added by "
-               "Magma. Entered from memory: check against the paper",
+               "Magma",
     ),
     "Amphibolite (wet MORB)": Composition(
         {"SiO2": 50.47, "TiO2": 1.68, "Al2O3": 14.70, "FeO": 10.43, "MnO": 0.184, "MgO": 7.58,
