@@ -1,6 +1,6 @@
 # Taylor-expansion coefficients of the MELTS clinopyroxene model (Sack and Ghiorso 1994c, monoclinic
 # branch), evaluated from the parameter definitions in ThermoEngine src/CpxBerman.m (gitlab.com/ENKI-portal/
-# ThermoEngine, AGPL-3) with Douglas's approval of 2026-11-01. G_taylor = sum (H - T S + (P-1) V) * term,
+# ThermoEngine, AGPL-3). G_taylor = sum (H - T S + (P-1) V) * term,
 # term = product of the variables named: X2..X7 = r[0..5] (composition), S1, S2 = s[0..1] (ordering).
 # Units J, J/K, J/bar.  '0' is the constant term.
 term	H	S	V

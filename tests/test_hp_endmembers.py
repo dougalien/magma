@@ -28,13 +28,13 @@ def _boundary(reaction, t_k):
 
 
 def test_albite_jadeite_quartz():
-    """Albite = jadeite + quartz: 16.2 kbar at 600 C (Holland 1980, P = 0.35 + 0.0265 T)."""
+    """Albite = jadeite + quartz: 16.25 kbar at 600 C (Holland 1980, P = 0.35 + 0.0265 T(C) kbar)."""
     assert _boundary({"jd": 1, "q": 1, "ab": -1}, 873.15) == pytest.approx(16.24, abs=0.6)
 
 
 def test_quartz_coesite():
-    """Quartz = coesite near 30 kbar at 1000 C (Bose and Ganguly 1995 put it at 30.5)."""
-    assert _boundary({"coe": 1, "q": -1}, 1273.15) == pytest.approx(30.5, abs=1.0)
+    """Quartz = coesite at 1000 C: 30.7 kbar from Bose and Ganguly (1995), P = 21.945 + 0.006901 T(K) kbar."""
+    assert _boundary({"coe": 1, "q": -1}, 1273.15) == pytest.approx(21.945 + 0.006901 * 1273.15, abs=1.0)
 
 
 def test_al2sio5_triple_point():

@@ -19,10 +19,15 @@ def test_batch_melting_order_and_mass_balance():
     for m in steps:
         r = m.result
         assert r.liquid_grams + sum(s.grams for s in r.solids) == pytest.approx(100.0, rel=1e-9)
-    assert {"olivine", "orthopyroxene", "clinopyroxene", "spinel"} <= _names(steps[0])
-    # cpx is used up near 20% melt (Hirose and Kushiro 1993 find it near 1350-1400 C at 1 GPa)
+    # spinel lherzolite: olivine, orthopyroxene, a Ca-pyroxene and spinel.  With the Davis et al. (2009)
+    # KLB-1 the Ca-pyroxene (Ca about 0.6 per formula) is found by the low-Ca copy of the clinopyroxene
+    # model, which the app labels by composition (server._solid_json)
+    first = _names(steps[0])
+    assert {"olivine", "orthopyroxene", "spinel"} <= first and first & {"clinopyroxene", "pigeonite"}
+    # one pyroxene is used up before about 20% melt, leaving olivine, one pyroxene and spinel
     last = steps[-1]
-    assert "clinopyroxene" not in _names(last) and 0.15 < last.result.melt_fraction < 0.35
+    pyx = {"orthopyroxene", "clinopyroxene", "pigeonite"}
+    assert len(_names(last) & pyx) == 1 and 0.15 < last.result.melt_fraction < 0.35
 
 
 def test_fractional_melting_pools_melt_and_leaves_harzburgite():
@@ -33,3 +38,14 @@ def test_fractional_melting_pools_melt_and_leaves_harzburgite():
         r = m.result
         assert m.extracted_grams == 0 or m.extracted_grams < r.liquid_grams + 1e-9
     assert "clinopyroxene" not in _names(steps[-1]) and "orthopyroxene" in _names(steps[-1])
+
+
+def test_ca_pyroxene_is_labelled_by_composition():
+    from magma.app.server import _solid_json
+    from magma.equilibrium import PhaseResult
+    from magma.thermo.pyroxene import CLINOPYROXENE
+    names = CLINOPYROXENE.end_members
+    augite_like = dict(zip(names, [0.378, 0.328, 0.12, 0.096, -0.08, 0.121, 0.037]))
+    assert _solid_json(PhaseResult("pigeonite", 10.0, {}, augite_like))["label"] == "Augite"
+    pigeonite_like = dict(zip(names, [0.06, 0.74, 0.14, 0.02, 0.0, 0.03, 0.01]))
+    assert _solid_json(PhaseResult("pigeonite", 10.0, {}, pigeonite_like))["label"] == "Pigeonite"

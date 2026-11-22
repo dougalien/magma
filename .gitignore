@@ -8,3 +8,8 @@ dist/
 # third-party databases and reference codes are never committed; point importers at a local copy
 data/external/
 workspace/
+# local files that are not part of the source: papers (copyrighted), builds and old copies
+*.pdf
+*.exe
+dist_new/
+_old_backups/

@@ -130,8 +130,7 @@ class Composition:
         return "\n".join(rows + [f"{'Total':<6} {self.total:8.3f}"])
 
 
-# Starting compositions.  Each carries its source; check values against the paper before
-# relying on them for validation.
+# Starting compositions, each with its source.
 PRESETS: dict[str, Composition] = {
     "MORB": Composition(
         {"SiO2": 50.47, "TiO2": 1.68, "Al2O3": 14.70, "FeO": 10.43, "MnO": 0.184, "MgO": 7.58,
@@ -146,11 +145,11 @@ PRESETS: dict[str, Composition] = {
         source="ThermoEngine documentation, MELTS v1.0.2 fractionation example (high-alumina basalt)",
     ),
     "KLB-1 peridotite": Composition(
-        {"SiO2": 44.48, "TiO2": 0.16, "Al2O3": 3.59, "Cr2O3": 0.31, "FeO": 8.10, "MnO": 0.12,
-         "MgO": 39.22, "CaO": 3.44, "Na2O": 0.30, "K2O": 0.02, "NiO": 0.25},
+        {"SiO2": 44.84, "TiO2": 0.11, "Al2O3": 3.51, "Cr2O3": 0.32, "FeO": 8.20, "MnO": 0.12,
+         "MgO": 39.52, "CaO": 3.07, "Na2O": 0.30, "K2O": 0.02},
         name="KLB-1 spinel lherzolite",
-        source="Davis, Tangeman and Hirschmann (2009) Am. Mineral. 94:176-180, Table 1 (KLB-1 of "
-               "Takahashi 1986); FeO is total Fe",
+        source="Davis, Tangeman, Tenner and Hirschmann (2009) Am. Mineral. 94:176-180, Table 1, recommended "
+               "composition (KLB-1 of Takahashi 1986); FeO is total Fe",
     ),
     "Bishop Tuff rhyolite": Composition(
         {"SiO2": 77.5, "TiO2": 0.08, "Al2O3": 12.5, "Fe2O3": 0.207, "FeO": 0.473, "MgO": 0.03,
@@ -167,14 +166,14 @@ PRESETS: dict[str, Composition] = {
                "FeO is total Fe; 3 wt% H2O added by Magma, as for an arc andesite",
     ),
     "Dacite (upper crust)": Composition(
-        {"SiO2": 66.62, "TiO2": 0.64, "Al2O3": 15.40, "FeO": 5.04, "MnO": 0.10, "MgO": 2.48,
+        {"SiO2": 66.6, "TiO2": 0.64, "Al2O3": 15.40, "FeO": 5.04, "MnO": 0.10, "MgO": 2.48,
          "CaO": 3.59, "Na2O": 3.27, "K2O": 2.80, "P2O5": 0.15, "H2O": 4.0},
         name="Dacite: upper continental crust",
         source="Rudnick and Gao (2003) Treatise on Geochemistry 3.01, upper continental crust (a dacite or "
                "granodiorite); FeO is total Fe; 4 wt% H2O added by Magma",
     ),
     "Granite source (upper crust)": Composition(
-        {"SiO2": 66.62, "TiO2": 0.64, "Al2O3": 15.40, "FeO": 5.04, "MnO": 0.10, "MgO": 2.48,
+        {"SiO2": 66.6, "TiO2": 0.64, "Al2O3": 15.40, "FeO": 5.04, "MnO": 0.10, "MgO": 2.48,
          "CaO": 3.59, "Na2O": 3.27, "K2O": 2.80, "P2O5": 0.15, "H2O": 1.5},
         name="Upper continental crust (a rock to melt)",
         source="Rudnick and Gao (2003), upper continental crust as above, with 1.5 wt% H2O (the water of "

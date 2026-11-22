@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use Magma in your work, please cite it as below."
+title: "Magma: open modelling of magma crystallization and melting"
+type: software
+authors:
+  - name: "Dougalien Systems"
+version: 0.1.0
+license: GPL-3.0-or-later
+repository-code: "https://github.com/dougalien/magma"
+abstract: >-
+  Magma computes the crystallization of cooling silicate melts and the partial melting of rocks
+  by Gibbs energy minimization, with the MELTS models (Ghiorso and Sack 1995) and the
+  Holland and Powell igneous models (Holland, Green and Powell 2018), and a browser interface for
+  teaching and research.
+keywords:
+  - petrology
+  - igneous
+  - MELTS
+  - thermodynamics
+  - phase equilibria

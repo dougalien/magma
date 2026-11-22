@@ -42,7 +42,7 @@ def _water_affinity(h2o, p, t_c=1200.0):
 
 
 def test_water_solubility_in_morb():
-    # about 3 wt% at 1 kbar and 1200 C (MELTS-like; Dixon et al. 1995 measure 2-3 wt%)
+    # about 3 wt% at 1 kbar and 1200 C in this model
     assert _water_affinity(2.0, 1000.0) < 0 < _water_affinity(3.5, 1000.0)
     assert _water_affinity(3.5, 2000.0) < 0                         # more soluble at higher P
 

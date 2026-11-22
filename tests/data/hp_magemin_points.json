@@ -1,5 +1,5 @@
 {
- "note": "MAGEMin 2.1.0 (database ig, dataset 636) equilibrium points, run 2026-11-02 as a reference with Douglas's approval. P kbar, T_C Celsius, bulk mol (SiO2 Al2O3 CaO MgO FeO K2O Na2O TiO2 O Cr2O3 H2O), gamma = oxide chemical potentials (kJ), frac = end-member proportions of each stable solution phase, mu = MAGEMin's end-member chemical potentials times its per-phase normalizing factor (MAGEMin's emChemPot), f = MAGEMin's phase fraction (atom basis).",
+ "note": "MAGEMin 2.1.0 (database ig, dataset 636) equilibrium points, run as a reference. P kbar, T_C Celsius, bulk mol (SiO2 Al2O3 CaO MgO FeO K2O Na2O TiO2 O Cr2O3 H2O), gamma = oxide chemical potentials (kJ), frac = end-member proportions of each stable solution phase, mu = MAGEMin's end-member chemical potentials times its per-phase normalizing factor (MAGEMin's emChemPot), f = MAGEMin's phase fraction (atom basis).",
  "points": [
   {
    "P": 5.0,

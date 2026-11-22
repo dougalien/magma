@@ -1,32 +1,37 @@
-# Magma: design notes
+# Magma: design
 
-Agreed 2026-10-31: MELTS-style Gibbs energy minimization (not empirical mineral-melt models).
-The full plan is the doc "Magma: architecture and scope"
-(https://claude.ai/artifact/CT3EFvpLiowxUxAfx9JXr5).  Summary:
+Magma computes phase equilibria of silicate melts and rocks by Gibbs energy minimization, with
+thermodynamic models taken from the literature and implemented from their published equations.
+It does not use empirical mineral-melt partitioning models.
 
-* Own code in Python (numpy, scipy), laid out like Reaction.  Never copied from MELTS.
-* Liquid: Ghiorso and Sack (1995); pMELTS (Ghiorso et al. 2002) later for mantle melting.
-* Solids: Berman (1988) end-members with the MELTS adjustments + solid-solution models.
-* Iron redox: Kress and Carmichael (1991).  Buffers: Frost (1991).
-* Checks: ThermoEngine (ENKI) and experimental liquid lines of descent.
+## Engines
 
-## Milestones
+* MELTS (`magma.thermo`, `magma.equilibrium`): the liquid of Ghiorso and Sack (1995), Berman (1988)
+  end members with the MELTS adjustments, and the MELTS solid-solution models. Phases are added and
+  dropped by their affinities (Ghiorso 1994). Iron redox follows Kress and Carmichael (1991); oxygen
+  buffers follow Frost (1991).
+* Holland and Powell (`magma.hp`): the ds636 end-member dataset (Holland and Powell 2011) and the
+  igneous solution models (Holland, Green and Powell 2018; Green et al. 2016), with a Gibbs energy
+  minimizer of Magma's own.
 
-1. Thermodynamic layer (liquid, Fe redox, olivine, plagioclase, clinopyroxene, spinel)
-2. Equilibrium at one T, P (minimizer, liquidus finder)
-3. Paths: equilibrium/fractional cooling, batch/fractional melting
-4. Two-window app and Windows exe, as in Reaction
-5. H2O-CO2, more phases, pMELTS; hand exsolved fluid to Reaction
+Both are checked against reference codes in the tests: ThermoEngine (MELTS v1.0.2) for the MELTS
+engine and MAGEMin for the Holland and Powell engine.
 
 ## Layout
 
 ```
 src/magma/
-  composition.py   oxides, moles, fractions, presets
-  redox.py         fO2 buffers, melt Fe3+/Fe2+
-  data/            parameter tables (.tsv) with citations
-  thermo/          liquid, standard states, minerals, solid solutions
-  equilibrium.py   phase equilibrium (affinities + equilibrium conditions)
-  path.py          cooling paths (melting coming)
-  app/             local two-window app                       (coming)
+  composition.py     oxides, moles, fractions, preset compositions and starting cards
+  redox.py           fO2 buffers, melt Fe3+/Fe2+
+  data/              parameter tables (.tsv), each with its source
+  thermo/            MELTS liquid, standard states, minerals and solid solutions, water
+  equilibrium.py     MELTS phase equilibrium at one T, P and fO2
+  path.py            cooling paths (equilibrium or fractional crystallization)
+  melting.py         batch and fractional melting
+  differentiation.py, classify.py   mantle to magma, magma-type and TAS names
+  hp/                Holland and Powell end members, solutions, minimizer and engine adapter
+  app/               local two-window app (standard-library server and static pages)
+  web/               Streamlit front end with the same two windows
+streamlit_app.py     Streamlit entry point
+scripts/make_sources.py   writes docs/REFERENCES.md and the app's Sources page
 ```

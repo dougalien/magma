@@ -3,7 +3,7 @@
 Batch melting is equilibrium, so it does not depend on the path: Magma computes it by cooling the
 rock's own composition from above its liquidus (where the solver has a sure start) down to the
 lowest temperature asked, and reports the steps from low to high temperature.  The steps stop at the
-solidus, which Magma cannot cross yet.
+solidus, which the MELTS engine cannot cross (the Holland & Powell engine, magma.hp, can).
 
 Fractional melting starts from the batch state at the lowest temperature and heats in steps.  At each
 step the melt above a small retained fraction (the porosity of the residue) is removed and saved;

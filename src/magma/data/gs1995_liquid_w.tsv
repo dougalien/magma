@@ -1,9 +1,8 @@
 # Ghiorso and Sack (1995) Contrib Mineral Petrol 119:197-212, Table 4.
 # Regular-solution interaction parameters W(i,j) of the liquid, in J/mol
 # (the table header says kJ, but the values are J: e.g. W(SiO2,TiO2) = 26.267 kJ).
-# Typed from the scanned table on 2026-10-31; blank cells (H2O-MgCr2O4) are zero.
-# Checked 2026-11-01 against the values in ThermoEngine (LiquidMelts.m): the scan had lost the
-# minus signs of TiO2-Fe2O3 and Al2O3-Na2SiO3; all 66 values now agree to within 1 J.
+# Blank cells (H2O-MgCr2O4) are zero.  All 66 values agree with the printed table and, to within 1 J,
+# with ThermoEngine (LiquidMelts.m).
 i	j	W_J
 SiO2	TiO2	26267
 SiO2	Al2O3	-39120

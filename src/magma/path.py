@@ -25,7 +25,7 @@ def iter_crystallize(bulk: Composition, t_start: float, t_end: float, step: floa
                      phases=("olivine", "feldspar", "clinopyroxene", "pigeonite", "orthopyroxene", "spinel", "titanomagnetite", "rhombohedral", "garnet", "hornblende", "biotite", "alkali-feldspar", "muscovite", "quartz", "tridymite", "water")):
     """Same as crystallize, one step at a time (the app shows progress and can stop between steps).
     In equilibrium mode the path ends early near the solidus: once the melt is nearly gone and the
-    next step cannot keep the assemblage (Magma has no liquid-free equilibrium yet)."""
+    next step cannot keep the assemblage (the MELTS engine has no liquid-free equilibrium; the Holland & Powell engine has)."""
     if mode not in ("equilibrium", "fractional"):
         raise ValueError("mode must be 'equilibrium' or 'fractional'")
     if step <= 0 or t_end > t_start:

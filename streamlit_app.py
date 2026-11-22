@@ -14,8 +14,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 import streamlit as st  # noqa: E402
 
-from magma.web.app import input_page, results_page  # noqa: E402
+from magma.web.app import input_page, results_page, sources_page  # noqa: E402
 
 page = st.navigation([st.Page(input_page, title="Input", url_path="input", default=True),
-                      st.Page(results_page, title="Results", url_path="results")], position="hidden")
+                      st.Page(results_page, title="Results", url_path="results"),
+                      st.Page(sources_page, title="Sources", url_path="sources")], position="hidden")
 page.run()

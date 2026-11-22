@@ -10,7 +10,7 @@ here and checked against finite differences and published verification values
 
 Units: T in K, P in bar (MPa where noted), rho in kg/m3, G/H/S per mole of H2O.
 
-Copied from Douglas's Reaction app (src/reaction/thermo/water.py) for Magma's water fluid.  Magma
+The same code as Reaction's src/reaction/thermo/water.py (Dougalien Systems), used for Magma's water fluid.  Magma
 uses it above its validated range (1273 K, 10 kbar), up to 2273 K and 30 kbar: the IAPWS-95 release
 states that the formulation extrapolates reasonably to 5000 K and 100 GPa.
 """

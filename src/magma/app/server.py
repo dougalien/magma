@@ -180,7 +180,7 @@ class State:
                         self.message = f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is used up (the solidus)."
                     else:
                         self.message = (f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is nearly gone (near the "
-                                        "solidus), which Magma cannot follow further yet.")
+                                        "solidus), below which the MELTS engine cannot go; the Holland & Powell engine can.")
                 elif not self.steps:
                     self.message = "No melt at these conditions: the composition is below its solidus."
         except Exception as exc:          # shown in both windows
@@ -273,8 +273,8 @@ class State:
             self.status = "done"
             if self.steps and self.steps[-1]["t"] > kw["t_end"] + 1e-6:
                 self.message = (f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is used up (the solidus)." if hp else
-                                f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is nearly gone, which Magma "
-                                "cannot follow further yet.")
+                                f"Ended at {self.steps[-1]['t']:.0f} °C: the melt is nearly gone, below which the "
+                                "MELTS engine cannot go; the Holland & Powell engine can.")
         except _Stopped:
             self.status, self.message = "stopped", "Stopped."
         except Exception as exc:
@@ -375,7 +375,14 @@ def _solid_json(s) -> dict:
     if isinstance(s, hp_engine.HPPhase):
         return {"name": s.name, "label": PHASE_LABEL.get(s.name, s.name), "grams": s.grams, "x": s.x,
                 "numbers": s.numbers, "formula": s.formula}
-    return {"name": s.name, "label": PHASE_LABEL.get(s.name, s.name), "grams": s.grams, "x": s.x,
+    label = PHASE_LABEL.get(s.name, s.name)
+    if s.name in ("clinopyroxene", "pigeonite"):
+        # the two copies of the clinopyroxene model start on either side of CA_SPLIT but can drift
+        # across it, so the label follows the composition: Ca per six oxygens above the split is augite
+        from ..thermo.pyroxene import CA_SPLIT, r_from_x
+        r = r_from_x([s.x[e] for e in PHASES[s.name].end_members])
+        label = PHASE_LABEL["clinopyroxene"] if 1 - r[4] - r[5] >= CA_SPLIT else PHASE_LABEL["pigeonite"]
+    return {"name": s.name, "label": label, "grams": s.grams, "x": s.x,
             "numbers": _numbers(s.name, s.x), "formula": PHASES[s.name].formula(np.array(list(s.x.values())))}
 
 
