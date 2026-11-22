@@ -1,5 +1,5 @@
 # G (kJ/mol) of Holland & Powell ds636 end members from MAGEMin 2.1.0 (TC_G_EM_function, equilibrium state),
-# run on 2026-11-02 as a reference for tests/test_hp_endmembers.py, with Douglas's approval.  T in K, P in kbar.
+# run as a reference for tests/test_hp_endmembers.py.  T in K, P in kbar.
 name	T	P	G
 fo	873.15	2.0	-2297.643490
 fo	1173.15	5.0	-2368.222511

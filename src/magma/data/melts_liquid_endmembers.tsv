@@ -1,6 +1,6 @@
 # Liquid end members of the MELTS liquid (Ghiorso and Sack 1995, Table A1 and appendix), numbers as
 # used in ThermoEngine v2 (gitlab.com/ENKI-portal/ThermoEngine, src/LiquidMelts.m, AGPL-3), taken
-# with Douglas's approval on 2026-11-01 because they correct several values that are hard to read in
+# because they correct several values that are hard to read in
 # the scanned paper.  Reference solid: H (J), S (J/K), Berman Cp k0..k3, lambda l1, l2 with a
 # first-order step deltaH (J) at Tt (K); liquid volume terms at 1673.15 K and 1 bar; fusion T (K),
 # dS (J/K) and liquid Cp (J/K).  Na2SiO3 H and S are in cal in the source (x 4.184 applied).

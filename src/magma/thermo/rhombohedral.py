@@ -15,7 +15,7 @@ S = -R [sum_A x ln x + sum_B x ln x - 2 sum_ID(M, Ti) x ln x]
     - (1 - c) 2R sum_ID(all) x ln x + c 2R ln 2,  with c = 0.0730205 (short-range order)
 G = H(r, s, P) - T S, with s minimizing G from MELTS's ordered start (s = 0.9 r).  End-member
 reference states are the pure phases with their own ordering.  Parameter values from ThermoEngine
-RhombohedralBerman.m (published numbers, cited; Douglas's approval 2026-11-01); our own code.
+RhombohedralBerman.m (published numbers, cited); Magma's own code.
 The ternary (W_ilm-ilm-gei ...) terms of the model are all zero in MELTS and are left out here.
 """
 from __future__ import annotations

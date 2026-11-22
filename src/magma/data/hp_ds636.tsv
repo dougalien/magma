@@ -1,6 +1,6 @@
 # Holland & Powell end-member dataset ds636 (Holland and Powell 2011, J. Metamorphic Geol. 29, 333-383, and later
-# updates by T. Holland), numbers as distributed in MAGEMin (src/TC_database/TC_endmembers.c), taken with Douglas's
-# approval 2026-11-02.  Units: H kJ/mol, S kJ/K/mol, V kJ/kbar/mol (= J/bar / 10), Cp = a + bT + c/T^2 + d/sqrt(T) (kJ/K),
+# updates by T. Holland), numbers as distributed in MAGEMin (src/TC_database/TC_endmembers.c), as used
+# by MAGEMin (Riel et al. 2022).  Units: H kJ/mol, S kJ/K/mol, V kJ/kbar/mol (= J/bar / 10), Cp = a + bT + c/T^2 + d/sqrt(T) (kJ/K),
 # alpha0 1/K, kappa0 kbar.  Composition in moles of oxides (Sel = sulfur) (O = extra oxygen for Fe3+), atoms = atoms per formula.
 # od = 0 none; 1 Landau (od1 Tc0 K, od2 Smax kJ/K, od3 Vmax kJ/kbar); 2 Bragg-Williams (od1 dH, od2 dV, od3 W, od4 WV, od5 n, od6 factor).
 # For liquid end members (names ending in L) the od column is dkappa/dT (kbar/K) instead.

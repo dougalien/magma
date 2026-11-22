@@ -18,7 +18,7 @@ model.  At each T, P and r the ordering s minimizes G.  The Gibbs energy of mixi
 the seven end members in their own reference states (essenite with its own Fe3+-Al ordering), and
 the end members carry the Berman-form standard states of minerals.py.
 
-Our own implementation of the published model's equations (Douglas's approval, 2026-11-01).
+Magma's own implementation of the published model's equations.
 """
 from __future__ import annotations
 

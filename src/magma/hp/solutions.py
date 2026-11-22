@@ -11,8 +11,7 @@ mu_ex is the symmetric formalism (Powell and Holland 1993) or, when volumes v_i 
 asymmetric van Laar form (Holland and Powell 2003), with pair parameters W_ij = a + b T + c P (kJ).
 Proportions may be negative for order-disorder end members, as long as every site fraction is >= 0.
 
-Parameter values are those of the igneous set as distributed in MAGEMin (numbers only, Douglas's
-approval 2026-11-02).  Units: kJ, K, kbar.
+Parameter values are those of the igneous set as distributed in MAGEMin (numbers only).  Units: kJ, K, kbar.
 """
 from __future__ import annotations
 

@@ -86,7 +86,7 @@ function bowenView(steps) {
     .filter((o) => o.p && o.p.numbers && o.p.numbers.An !== undefined);
   const box = (title, names) => {
     const seen = names.filter((n) => n in first).sort((a, b) => first[b].t - first[a].t);
-    if (!names.length) return h("div", { class: "box off" }, h("b", {}, title), "not in Magma's model yet");
+    if (!names.length) return h("div", { class: "box off" }, h("b", {}, title), "not in this model");
     if (!seen.length) return h("div", { class: "box off" }, h("b", {}, title), "did not form in this run");
     return h("div", { class: "box on" }, h("b", {}, title), seen.map((n) => `${first[n].label.toLowerCase()} from ${first[n].t.toFixed(0)} °C`).join("; "));
   };
@@ -112,7 +112,7 @@ function bowenView(steps) {
     h("div", { class: "temp" }, h("span", {}, `↑ hot: ${t0.toFixed(0)} °C`), h("span", {}, `cool: ${t1.toFixed(0)} °C ↓`))),
   h("p", { class: "hint", style: "text-align:center" }, oxides.length
     ? `Also formed, outside Bowen's scheme: ${oxides.map((n) => `${first[n].label.toLowerCase()} from ${first[n].t.toFixed(0)} °C`).join(", ")}.`
-    : "Dashed boxes: minerals that did not form, or that Magma cannot make yet.")];
+    : "Dashed boxes: minerals that did not form, or that this model does not include.")];
 }
 
 function draw() {

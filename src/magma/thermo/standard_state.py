@@ -21,8 +21,8 @@ The paper prints the last coefficient as 463.8; that gives Cp = 102 J/K at 298 K
 1480 K (above the liquid), while 1463.8 gives 44.2 J/K at 298 K, matching measured silica glass
 (44.4 J/K).  We take 1463.8, which is also the value in ThermoEngine (LiquidMeltsSiO2.m).
 
-H2O: the standard state MELTS v1.0.2 uses (ThermoEngine LiquidMeltsH2O.m, numbers taken with
-Douglas's approval): G = RT (a/T + b + phi(T, P)) + G_water(T, 1 bar) - G_Robie(T), with a = -33676,
+H2O: the standard state MELTS v1.0.2 uses (numbers from ThermoEngine
+LiquidMeltsH2O.m): G = RT (a/T + b + phi(T, P)) + G_water(T, 1 bar) - G_Robie(T), with a = -33676,
 b = 18.3527, phi a quartic in P (the dissolved-water volume) and G_Robie a fit in T.  Magma measures
 G_water(T, 1 bar) from IAPWS-95 put on the Berman-Brown scale of the minerals (water_fluid.py), so
 liquid_gibbs("H2O") returns RT (a/T + b + phi) - G_Robie + G_water(T, 1 bar), and the water fluid

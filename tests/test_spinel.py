@@ -38,7 +38,7 @@ def test_chemical_potentials_are_partial_derivatives():
 
 def test_spinel_saturation_against_melts_example():
     a, x = sp.SPINEL.affinity(_mu(MELTS_LIQ, T_EX, P), T_EX, P)
-    assert abs(a) < 500                                   # MELTS: saturated (ours +160 J)
+    assert abs(a) < 500                                   # MELTS: saturated (Magma +160 J)
     cr, hc, mt, spl, usp = x
     assert 2 * cr == pytest.approx(0.45, abs=0.05)         # MELTS: Cr 0.45, Mg 0.79 per 4 O
     assert spl == pytest.approx(0.79, abs=0.05)

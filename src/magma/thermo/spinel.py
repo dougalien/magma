@@ -13,8 +13,8 @@ Site occupancies, per formula unit with one tetrahedral and two octahedral sites
 
 G = quadratic Taylor expansion (data/melts_spinel_taylor.tsv) - T S_config
     + r2 r3 (WV1 r3 + WV2 r2)(P - 1), with s minimizing G.  The end members' reference states are
-the same expression at each pure composition with its own ordering.  Our own implementation of
-the published model's equations (Douglas's approval, 2026-11-01).
+the same expression at each pure composition with its own ordering.  Magma's own implementation of
+the published model's equations.
 """
 from __future__ import annotations
 

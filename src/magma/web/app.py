@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import csv
 import io
+import re
 import secrets
 from pathlib import Path
 import threading
@@ -28,9 +29,9 @@ from .chem import chem_html, chem_text
 from .story import bowen, story, type_steps
 
 FEEDBACK_URL = "https://github.com/dougalien/magma/issues"
-# Where the two windows live; a host app (Protolith) that mounts these pages elsewhere changes them,
-# and can add panels to the windows through the hooks (each a function of the State).
-PATHS = {"input": "./", "results": "./results"}
+# Where the two windows live; a host app that mounts these pages elsewhere can change them, and can
+# add panels to the windows through the hooks (each a function of the State).
+PATHS = {"input": "./", "results": "./results", "sources": "./sources"}
 RESULTS_EXTRAS: list = []
 APP_NAME = "Magma"
 WORKSPACE_TTL = 12 * 3600          # a workspace untouched for 12 hours is dropped
@@ -119,7 +120,6 @@ def header(subtitle: str) -> None:
     st.markdown(
         f"""<div style="display:flex;align-items:center;gap:12px;padding:4px 0 10px;position:relative">
 <img src="{_svg('dougalien_mark.svg')}" width="34" height="34" alt="Dougalien Systems">
-<img src="{_svg('magma_mark.svg')}" width="30" height="30" alt="">
 <span style="font-size:1.55rem;font-weight:600;color:#2B3134">Magma</span>
 <a href="https://dougalien.com" target="_blank" style="color:#5b6468;text-decoration:none">by Dougalien Systems</a>
 <span style="color:#6f777a;font-size:0.9rem">· {subtitle}</span></div>
@@ -129,8 +129,10 @@ def header(subtitle: str) -> None:
 
 def footer() -> None:
     st.divider()
-    st.caption(f"Magma {__version__} · beta · [Report a problem]({FEEDBACK_URL}) · Every number comes from "
-               "Magma's own solver; every datum is cited in the notes.")
+    wid = st.query_params.get("w") or ""
+    st.caption(f"Magma {__version__} · beta · [Sources and how to cite]({PATHS['sources']}?w={wid}) · "
+               f"[Report a problem]({FEEDBACK_URL}) · Every number comes from Magma's own solver; "
+               "every datum is cited on the Sources page.")
 
 
 # ---- the Input window -------------------------------------------------------------------------------
@@ -450,7 +452,7 @@ def _bowen_view(steps) -> None:
         with col:
             boxes([item])
     st.caption(f"Also formed, outside Bowen's scheme: {b['also']}." if b["also"]
-               else "Gray boxes: minerals that did not form, or that Magma cannot make yet.")
+               else "Gray boxes: minerals that did not form, or that this model does not include.")
 
 
 def _table_rows(steps) -> tuple[list[str], list[list]]:
@@ -562,4 +564,17 @@ def results_page() -> None:
     with st.expander("Notes on the models"):
         for n in snap["notes"]:
             md(f"- {n}")
+    footer()
+
+
+# ---- the Sources page -------------------------------------------------------------------------------
+def sources_page() -> None:
+    st.set_page_config(page_title="Magma | Sources", page_icon=ICON, layout="wide")
+    wid = st.query_params.get("w") or ""
+    header("sources and how to cite")
+    st.link_button("Back to the input window", f"{PATHS['input']}?w={wid}")
+    html = (STATIC / "sources.html").read_text(encoding="utf-8")
+    body = re.search(r"<main[^>]*>(.*)</main>", html, re.S)
+    content = body.group(1) if body else html
+    st.html(f"<div style='max-width:900px;line-height:1.55;color:#2B3134'>{content}</div>")
     footer()

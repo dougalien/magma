@@ -1,7 +1,7 @@
 # Mineral end members in the MELTS convention (Berman 1988 form): H (J), S (J/K) at 298.15 K, 1 bar;
 # Cp = k0 + k1 T^-0.5 + k2 T^-2 + k3 T^-3; V = v0 [1 + v1 (P-1) + v2 (P-1)^2 + v3 (T-Tr) + v4 (T-Tr)^2].
 # Values as used in ThermoEngine v2 (gitlab.com/ENKI-portal/ThermoEngine, src/*Berman.m, AGPL-3),
-# taken with Douglas's approval on 2026-11-01; they follow Berman (1988) except where noted.
+# they follow Berman (1988) except where noted.
 # special: albite_salje = Salje (1985) Landau ordering term; disorder = Berman (1988) disorder
 # function d0..d4 up to 1436 K with d5 its volume scaling; lambda:l1,l2,Tt,deltaH = Berman (1988)
 # lambda heat capacity (see minerals.py).

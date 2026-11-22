@@ -168,7 +168,7 @@ def bowen(steps) -> dict:
     def box(title, names):
         seen = sorted((n for n in names if n in first), key=lambda n: -first[n]["t"])
         if not names:
-            return (title, "not in Magma's model yet", False)
+            return (title, "not in this model", False)
         if not seen:
             return (title, "did not form in this run", False)
         return (title, "; ".join(f"{first[n]['label'].lower()} from {first[n]['t']:.0f} °C" for n in seen), True)

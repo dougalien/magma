@@ -1,7 +1,7 @@
 # Taylor-expansion coefficients of the MELTS orthopyroxene model (Sack and Ghiorso 1994c, orthorhombic
 # branch, with SS2 = 0 as compiled for MELTS and pMELTS), evaluated from the parameter definitions in
-# ThermoEngine src/OpxBerman.m (gitlab.com/ENKI-portal/ThermoEngine, AGPL-3) with Douglas's approval of
-# 2026-11-01. Same layout as melts_cpx_taylor.tsv; the reference states of the end members are the
+# ThermoEngine src/OpxBerman.m (gitlab.com/ENKI-portal/ThermoEngine, AGPL-3).
+# Same layout as melts_cpx_taylor.tsv; the reference states of the end members are the
 # monoclinic ones of that table, so orthopyroxene differs from clinopyroxene only in these terms.
 term	H	S	V
 0	2331.7432000000003	1.3807200000000002	0.075312

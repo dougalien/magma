@@ -1,6 +1,6 @@
 # Taylor-expansion coefficients of the MELTS spinel model (Sack and Ghiorso 1991, with the erratum),
 # evaluated from the interaction parameters in ThermoEngine src/SpinelBerman.m (gitlab.com/ENKI-portal/
-# ThermoEngine, AGPL-3) with Douglas's approval of 2026-11-01.  G_taylor = sum (H - T S) * term over
+# ThermoEngine, AGPL-3).  G_taylor = sum (H - T S) * term over
 # X2..X5 = r0..r3 (mole fractions of spinel MgAl2O4, chromite, ulvospinel, magnetite) and S1..S3 = s0..s2
 # (Mg tet-oct, Al oct-tet and Fe3+ oct-tet ordering).  The model's s3 equals X3 and is folded in.
 term	H	S

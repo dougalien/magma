@@ -2,8 +2,7 @@
 hornblende, as in MELTS v1.0.2 (ThermoEngine EquilibrateUsingMELTSv102.m lists all of them).
 
 Parameter values are from ThermoEngine v2 (src/BermanStoichiometricPhases.m, BiotiteBerman.m,
-HornblendeBerman.m; AGPL-3), numbers only, with Douglas's approval (2026-11-01 policy, extended to
-these phases on 2026-11-02).  The code is our own, written from the equations.
+HornblendeBerman.m; AGPL-3), numbers only.  The code is Magma's own, written from the equations.
 
 * Quartz: Berman (1988).  Below its alpha-beta transition (848 K at 1 bar, + 0.0237 K/bar) alpha quartz
   with the lambda heat capacity, above it beta quartz; MELTS adds -1291 J to both (QUARTZ_ADJUSTMENT,
