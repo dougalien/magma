@@ -13,7 +13,7 @@ from the published equations and parameters:
 - **Holland and Powell**: the end-member dataset of Holland and Powell (2011) with the igneous
   solution models, liquid and aqueous fluid of Holland, Green and Powell (2018).
 
-Every paper and data set is listed in [docs/REFERENCES.md](docs/REFERENCES.md) and on the app's
+How to use the app is described in the user manual, [docs/MANUAL.md](docs/MANUAL.md). Every paper and data set is listed in [docs/REFERENCES.md](docs/REFERENCES.md) and on the app's
 Sources page. The design is described in [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Running Magma

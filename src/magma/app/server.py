@@ -51,8 +51,9 @@ HP_NOTES = [
     "Al2SiO5 minerals, corundum and nepheline. A feldspar with Or above 30% is shown as K-feldspar, a "
     "clinopyroxene with Wo below 25% as pigeonite, a spinel with more than half magnetite and "
     "ulvöspinel as titanomagnetite.",
-    "Not in this engine: MnO, P2O5, NiO, CoO and CO2 (left out), apatite and zircon. The liquid model is "
-    "calibrated for 1 to 30 kbar and is least certain at very low pressure.",
+    "Not in this engine: MnO, P2O5, NiO, CoO and CO2 (left out), apatite and zircon. Holland, Green and "
+    "Powell (2018) give their models for 0.001 to 70 kbar and from 650 C to peridotite liquidus temperatures; "
+    "no melt is considered below 500 C, as in MAGEMin.",
     "Iron: the system is open to oxygen at the chosen buffer (or closed, keeping its starting Fe2O3).",
     "Masses are grams per 100 g of starting material. In fractional crystallization the solids of each "
     "step are removed, and the solid masses shown are the totals removed so far. Melting shows the steps "
@@ -84,9 +85,8 @@ NOTES = [
     "Masses are grams per 100 g of starting material. In fractional crystallization the solids of each "
     "step are removed, and the solid masses shown are the totals removed so far.",
     "Melting: batch melting is equilibrium, computed by cooling the rock's composition from above its "
-    "liquidus and shown from low to high temperature; it starts at the solidus, which Magma cannot cross "
-    "yet. Fractional melting removes the melt above 1% of the residue at each step and pools it. "
-    "Garnet is not in the model, so peridotite melting is right only in the spinel field (below about 2 GPa). "
+    "liquidus and shown from low to high temperature; it starts at the solidus, below which the MELTS engine "
+    "cannot go. Fractional melting removes the melt above 1% of the residue at each step and pools it. "
     "The lowest-degree melts are too rich in Na2O, as in MELTS.",
 ]
 

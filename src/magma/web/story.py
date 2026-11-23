@@ -24,6 +24,11 @@ def _order(steps, use_step_grams=True) -> list[dict]:
     return order
 
 
+def _a(word: str) -> str:
+    """'a basalt', 'an andesite'."""
+    return ("an " if word[:1] in "aeiou" else "a ") + word
+
+
 def type_steps(steps):
     """The first step of each magma type the melt passes through."""
     return [s for i, s in enumerate(steps) if i == 0 or s["magma_type"] != steps[i - 1]["magma_type"]]
@@ -82,7 +87,7 @@ def _example_story(st) -> list[str]:
                f"{i.get('name') or 'rock'} is {src['melt_pct']:.1f}% melt, and the solid left behind is "
                f"{', '.join(p['label'].lower() for p in src['solids'])}. That melt is the primary magma: "
                f"{pr.get('SiO2', 0):.1f} wt% SiO2, {pr.get('MgO', 0):.1f} wt% MgO, Mg# {src['primary_mg']:.0f}, "
-               f"a {src['magma_type']} (TAS: {src['tas']}).")
+               f"{_a(src['magma_type'])} (TAS: {src['tas']}).")
     if not steps:
         return out
     last = steps[-1]
@@ -100,25 +105,26 @@ def _example_story(st) -> list[str]:
                                          for s in ts[1:]]
         out.append("The melt changes from " + ", to ".join(parts) + ".")
     out.append(f"At {last['t']:.0f} °C, {last['liquid_grams']:.1f} g of melt is left from 100 g of primary magma: "
-               f"{last['tas_xy'][0]:.1f} wt% SiO2 and {last['tas_xy'][1]:.1f} wt% Na2O + K2O, a "
-               f"{last['magma_type']} by silica (TAS: {last['tas']}).")
-    rn = runaway_note(steps)
+               f"{last['tas_xy'][0]:.1f} wt% SiO2 and {last['tas_xy'][1]:.1f} wt% Na2O + K2O, "
+               f"{_a(last['magma_type'])} by silica (TAS: {last['tas']}).")
+    melts = i.get("engine") == "melts"
+    rn = runaway_note(steps) if melts else None
     if rn:
         out.append(rn)
-    if re.search(r"trachy|phono|tephri|foid", last["tas"]):
+    if melts and re.search(r"trachy|phono|tephri|foid", last["tas"]):
         out.append("The TAS name is alkaline because the model's liquid keeps too much sodium (a known failing of "
                    "MELTS as well); a real melt with this silica would be the subalkaline type named by silica.")
     grew = {o["n"] for o in order}
     late = [n for n in ("hornblende", "biotite", "alkali-feldspar", "muscovite", "quartz") if n not in grew]
     if late:
         out.append("Late minerals of Bowen's series that did not form in this run: "
-                   + ", ".join("K-feldspar" if n == "alkali-feldspar" else n for n in late)
-                   + ". Magma has them (as MELTS does), but MELTS's hornblende and biotite are simple models that "
-                   "seldom saturate, and muscovite needs higher pressure (above about 3 kbar).")
+                   + ", ".join("K-feldspar" if n == "alkali-feldspar" else n for n in late) + "."
+                   + (" MELTS's hornblende and biotite are simple models that seldom saturate." if melts else ""))
     if last["magma_type"] != "rhyolite":
-        out.append("To follow Bowen's series to the end, run the \"Arc andesite\" or \"Dacite\" card: a crustal "
-                   "andesite, richer in potassium, goes on to rhyolite, then grows quartz, biotite and K-feldspar "
-                   "together at about 720 °C, the granite minimum.")
+        out.append("To follow Bowen's series to the end, run the \"Arc andesite\" or \"Dacite\" card: "
+                   + ("with the MELTS engine these crustal melts, richer in potassium, grow quartz, biotite and "
+                      "K-feldspar together near 720 to 740 °C." if melts else
+                      "with this engine these crustal melts, richer in potassium, go on to rhyolite."))
     return out
 
 
@@ -151,7 +157,7 @@ def story(st) -> list[str]:
         out.append(f"{lead} The melt has {last['liquid'].get('SiO2', 0):.1f} wt% SiO2 and Mg# {last['mg_number']:.0f}.")
     if first and "clinopyroxene" not in (st["inputs"].get("phases") or []):
         out.append("Clinopyroxene was not allowed in this run.")
-    rn = runaway_note(steps)
+    rn = runaway_note(steps) if st["inputs"].get("engine") == "melts" else None
     if rn:
         out.append(rn)
     return out

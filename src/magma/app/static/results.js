@@ -179,13 +179,15 @@ function runawayNote(steps) {
     "That is the MELTS liquid model holding too much sodium, which ThermoEngine's own MELTS does as well; it is not a real trend, so read the path no further than this.";
 }
 
+const an = (w) => (/^[aeiou]/.test(w) ? "an " : "a ") + w;
+
 function exampleStory(st) {
   const src = st.source, steps = st.steps, i = st.inputs, ex = i.example || {}, out = [];
   if (!src) { out.push(st.status === "running" ? (st.message || "Stage 1: melting the mantle rock...") : "Stage 1 did not finish."); return out; }
   const pr = src.primary;
   out.push(`Stage 1, melting the mantle: at ${src.t.toFixed(0)} °C and ${(src.p / 1000).toFixed(0)} kbar the ${i.name || "rock"} is ` +
     `${src.melt_pct.toFixed(1)}% melt, and the solid left behind is ${src.solids.map((p) => p.label.toLowerCase()).join(", ")}. ` +
-    `That melt is the primary magma: ${pr.SiO2.toFixed(1)} wt% SiO2, ${(pr.MgO ?? 0).toFixed(1)} wt% MgO, Mg# ${src.primary_mg.toFixed(0)}, a ${src.magma_type} (TAS: ${src.tas}).`);
+    `That melt is the primary magma: ${pr.SiO2.toFixed(1)} wt% SiO2, ${(pr.MgO ?? 0).toFixed(1)} wt% MgO, Mg# ${src.primary_mg.toFixed(0)}, ${an(src.magma_type)} (TAS: ${src.tas}).`);
   if (!steps.length) return out;
   const last = steps[steps.length - 1];
   const water = ex.h2o > 0 ? `with ${ex.h2o} wt% water added` : "dry";
@@ -198,16 +200,18 @@ function exampleStory(st) {
   const ts = typeSteps(steps);
   if (ts.length > 1) out.push(`The melt changes from ${ts.map((s, k) => k === 0 ? s.magma_type : `${s.magma_type} at ${s.t.toFixed(0)} °C (${s.liquid_grams.toFixed(0)} g of melt left)`).join(", to ")}.`);
   out.push(`At ${last.t.toFixed(0)} °C, ${last.liquid_grams.toFixed(1)} g of melt is left from 100 g of primary magma: ${last.tas_xy[0].toFixed(1)} wt% SiO2 and ` +
-    `${last.tas_xy[1].toFixed(1)} wt% Na2O + K2O, a ${last.magma_type} by silica (TAS: ${last.tas}).`);
-  const rn = runawayNote(steps);
+    `${last.tas_xy[1].toFixed(1)} wt% Na2O + K2O, ${an(last.magma_type)} by silica (TAS: ${last.tas}).`);
+  const melts = i.engine === "melts";
+  const rn = melts ? runawayNote(steps) : null;
   if (rn) out.push(rn);
-  if (/trachy|phono|tephri|foid/.test(last.tas)) out.push("The TAS name is alkaline because the model's liquid keeps too much sodium (a known failing of MELTS as well); a real melt with this silica would be the subalkaline type named by silica.");
+  if (melts && /trachy|phono|tephri|foid/.test(last.tas)) out.push("The TAS name is alkaline because the model's liquid keeps too much sodium (a known failing of MELTS as well); a real melt with this silica would be the subalkaline type named by silica.");
   const grew = new Set(order.map((o) => o.n));
   const late = ["hornblende", "biotite", "alkali-feldspar", "muscovite", "quartz"].filter((n) => !grew.has(n));
-  if (late.length) out.push(`Late minerals of Bowen's series that did not form in this run: ${late.map((n) => ({ "alkali-feldspar": "K-feldspar" }[n] || n)).join(", ")}. ` +
-    "Magma has them (as MELTS does), but MELTS's hornblende and biotite are simple models that seldom saturate, and muscovite needs higher pressure (above about 3 kbar).");
-  if (last.magma_type !== "rhyolite") out.push("To follow Bowen's series to the end, run the \"Arc andesite\" or \"Dacite\" card: a crustal andesite, richer in potassium, goes on to rhyolite, " +
-    "then grows quartz, biotite and K-feldspar together at about 720 °C, the granite minimum.");
+  if (late.length) out.push(`Late minerals of Bowen's series that did not form in this run: ${late.map((n) => ({ "alkali-feldspar": "K-feldspar" }[n] || n)).join(", ")}.` +
+    (melts ? " MELTS's hornblende and biotite are simple models that seldom saturate." : ""));
+  if (last.magma_type !== "rhyolite") out.push("To follow Bowen's series to the end, run the \"Arc andesite\" or \"Dacite\" card: " +
+    (melts ? "with the MELTS engine these crustal melts, richer in potassium, grow quartz, biotite and K-feldspar together near 720 to 740 °C."
+      : "with this engine these crustal melts, richer in potassium, go on to rhyolite."));
   return out;
 }
 
@@ -229,7 +233,7 @@ function story(st) {
       ` The melt has ${last.liquid.SiO2.toFixed(1)} wt% SiO2 and Mg# ${last.mg_number.toFixed(0)}.`);
   }
   if (first && !(st.inputs.phases || []).includes("clinopyroxene")) out.push("Clinopyroxene was not allowed in this run.");
-  const rn = runawayNote(steps);
+  const rn = st.inputs.engine === "melts" ? runawayNote(steps) : null;
   if (rn) out.push(rn);
   return out;
 }
