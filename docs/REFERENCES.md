@@ -97,11 +97,6 @@ files cite these by author and year. The same list is in the app (Sources link).
 - Wieser, M.E., Berglund, M. (2009). Atomic weights of the elements 2007 (IUPAC Technical Report). *Pure and Applied Chemistry 81, 2131-2156*. [doi:10.1351/PAC-REP-09-08-03](<https://doi.org/10.1351/PAC-REP-09-08-03>)
   Used for: Atomic weights (composition.py).
 
-## Checks
-
-- Hirose, K., Kushiro, I. (1993). Partial melting of dry peridotites at high pressures: determination of compositions of melts segregated from peridotite using aggregates of diamond. *Earth and Planetary Science Letters 114, 477-489*. [doi:10.1016/0012-821X(93)90077-M](<https://doi.org/10.1016/0012-821X(93)90077-M>)
-  Used for: Comparison for KLB-1 melting (clinopyroxene out).
-
 ## Software
 
 - ENKI project (M.S. Ghiorso and others) (n.d.). ThermoEngine: the MELTS thermodynamic models and Python interface. *https://gitlab.com/ENKI-portal/ThermoEngine (AGPL-3)*.

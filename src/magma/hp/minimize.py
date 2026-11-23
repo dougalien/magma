@@ -30,6 +30,7 @@ _IDX = [OXIDES.index(o) for o in COMPONENTS]
 # pure phases of the igneous set (MAGEMin's list less the buffers, O2 and pure H2O, which the fluid covers)
 PURE_PHASES = ("q", "crst", "trd", "coe", "stv", "ky", "sill", "and", "ru", "sph", "cor", "ne")
 SOLUTION_PHASES = ("liq", "fl", "ol", "opx", "cpx", "g", "spl", "ilm", "fsp", "amp", "bi", "mu", "cd", "ep", "chl")
+SLACK, SLACK_G = "_slack", 1.0e5   # kJ per mole of component: a column the optimum never keeps
 MELT_MIN_T = 773.15          # K; no liquid below this (as in MAGEMin)
 SF_MIN = 1e-10
 TRACE = 2e-5                 # mole fraction below which a component is left out
@@ -185,6 +186,13 @@ def equilibrate(bulk, t_k: float, p_kbar: float, phases=None, max_iter: int = 12
         c = np.array([DATA[n].comp.get(o, 0.0) for o in COMPONENTS])
         if np.all((c == 0) | present):
             cols.append((n, None, c, gibbs(n, t_k, p_kbar)))
+    # one slack column per component at a prohibitive cost, so that the first LP is always feasible even
+    # when the random starting columns of the solutions cannot match the bulk (a component present at a
+    # few hundredths of a wt%, such as the 0.03 wt% MgO of a rhyolite); column generation then replaces it
+    slack = []
+    for i in np.where(present)[0]:
+        slack.append(len(cols))
+        cols.append((SLACK, None, np.eye(len(COMPONENTS))[i], SLACK_G))
     warm = {}
     for ph in (previous.phases if previous is not None else []):
         if ph.prop is not None and ph.name in reduced:
@@ -265,6 +273,8 @@ def equilibrate(bulk, t_k: float, p_kbar: float, phases=None, max_iter: int = 12
                     added += 1
         if verbose:
             print(f"iter {it}: G={lp.fun:.4f} cols={len(cols)} added={added} worst={worst:.2e}")
+        if x[slack].max(initial=0.0) > 1e-12:
+            continue                            # the bulk is not yet matched by real phases
         if worst >= -coarse or it % 6 == 0:     # (every few rounds: the tail of column generation is slow)
             # close: solve the assemblage exactly, then check every phase against the exact gamma
             final = _finish(cols, lp.x, o2_col, reduced, bulk, gamma, t_k, p_kbar)
@@ -295,6 +305,8 @@ def equilibrate(bulk, t_k: float, p_kbar: float, phases=None, max_iter: int = 12
         if added == 0 and worst >= -tol:
             converged, final = True, None
             break
+    if final is None and lp.x[slack].max(initial=0.0) > 1e-12:
+        raise RuntimeError("no assemblage of the allowed phases matches this bulk composition")
     if final is None or not converged or worst < -tol:
         final = _finish(cols, lp.x, o2_col, reduced, bulk, gamma, t_k, p_kbar, polish_ok=True)
     phases_out, gamma, bulk = final
@@ -440,7 +452,7 @@ def _check(reduced, cols, phases, best_q, gamma, t, p, tol, rng):
     negative value and new columns for any phase below -tol."""
     worst, extra = 0.0, []
     for c in cols:
-        if c[1] is None and c[0] != "O2":
+        if c[1] is None and c[0] not in ("O2", SLACK):
             val = c[3] - c[2] @ gamma
             worst = min(worst, val)
             if val < -tol:

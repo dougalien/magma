@@ -29,6 +29,7 @@ from .chem import chem_html, chem_text
 from .story import bowen, story, type_steps
 
 FEEDBACK_URL = "https://github.com/dougalien/magma/issues"
+MANUAL_URL = "https://github.com/dougalien/magma/blob/main/docs/MANUAL.md"
 # Where the two windows live; a host app that mounts these pages elsewhere can change them, and can
 # add panels to the windows through the hooks (each a function of the State).
 PATHS = {"input": "./", "results": "./results", "sources": "./sources"}
@@ -131,6 +132,7 @@ def footer() -> None:
     st.divider()
     wid = st.query_params.get("w") or ""
     st.caption(f"Magma {__version__} · beta · [Sources and how to cite]({PATHS['sources']}?w={wid}) · "
+               f"[User manual]({MANUAL_URL}) · "
                f"[Report a problem]({FEEDBACK_URL}) · Every number comes from Magma's own solver; "
                "every datum is cited on the Sources page.")
 

@@ -70,3 +70,11 @@ def test_server_routes_engine():
     assert j["solids"] and all(s["formula"] for s in j["solids"] if s["name"] != "water")
     with pytest.raises(ValueError):
         parse_inputs({"bulk": {"SiO2": 50}, "engine": "other"})
+
+
+def test_trace_magnesium_rhyolite():
+    """The Bishop Tuff melt has 0.03 wt% MgO: the first linear programme must still be feasible (the
+    random starting columns of the solutions all carry far more Mg than that)."""
+    r = next(engine.iter_crystallize(PRESETS["Bishop Tuff rhyolite"], 800, 790, 10, 1750, None, "equilibrium"))
+    assert r.melt_fraction == pytest.approx(1.0)
+    assert r.liquid.get("MgO") == pytest.approx(0.03 * 100 / PRESETS["Bishop Tuff rhyolite"].total, rel=1e-3)
